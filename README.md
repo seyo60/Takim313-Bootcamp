@@ -3,11 +3,11 @@ Yapay Zeka ve Teknoloji Akademisi 2026 bünyesinde geliştirilen proje için scr
 
 # Takım 313
 Takım Üyeleri: 
-Mehmet Ali Ballı - Scrum Master
-Seymen Çiçek - Product Owner
-Merve Korkut - Developer
-Osman Kaya - Developer
-Seda Nur Tanık - Developer
+* Mehmet Ali Ballı - Scrum Master
+* Seymen Çiçek - Product Owner
+* Merve Korkut - Developer
+* Osman Kaya - Developer
+* Seda Nur Tanık - Developer
 
 # Ürün İle İlgili Bilgiler
 
