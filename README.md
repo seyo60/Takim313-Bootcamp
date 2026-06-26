@@ -15,15 +15,16 @@ Takım Üyeleri:
 *Bekleniyor...*
 
 ## Ürün Açıklaması
-*Bekleniyor...*
+Kentsel alanlarda yalnız seyahat eden bireylerin, kadınların ve öğrencilerin fiziksel güvenliğini korumayı amaçlayan yapay zeka destekli bir uygulamadır. Klasik haritaların aksine kullanıcıya sadece en kısa yolu değil; güvenlik verilerini, sokakların aydınlık durumunu ve kullanıcıların anlık tehlike bildirimlerini işleyerek "En Güvenli Yaşayan Rota" alternatifini sunar. Uygulama bünyesinde yer alan dinamik ısı haritası (heat map) modülü sayesinde kullanıcılar, şehrin hangi bölgelerinin daha güvenli veya hangi sokakların anlık olarak daha riskli olduğunu harita üzerinde görsel olarak doğrudan görebilirler. Yapay zeka altyapısıyla şehri anlık olarak tarayan sistem, riskleri önceden tespit ederek kullanıcıyı tehlikeli bölgelerden uzak tutmayı hedefleyen inovatif bir kentsel güvenlik projesidir.
 
 ## Ürün Özellikleri
 * *Bekleniyor...*
 * *Bekleniyor...*
 
 ## Hedef Kitle
-* *Bekleniyor...*
-* *Bekleniyor...*
+* Seyahat eden bireyler
+* Kadınlar
+* Öğrenciler
 
 ## Product Backlog URL
 *Bekleniyor...*
