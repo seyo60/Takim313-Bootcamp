@@ -2,7 +2,12 @@
 Yapay Zeka ve Teknoloji Akademisi 2026 bünyesinde geliştirilen proje için scrum süreçleri, sprint dokümantasyonları ve ürün yönetim şablonu.
 
 # Takım 313
-Takım Üyeleri: [Üye 1, Üye 2, Üye 3]
+Takım Üyeleri: 
+Mehmet Ali Ballı - Scrum Master
+Seymen Çiçek - Product Owner
+Merve Korkut - Developer
+Osman Kaya - Developer
+Seda Nur Tanık - Developer
 
 # Ürün İle İlgili Bilgiler
 
