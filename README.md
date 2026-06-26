@@ -7,21 +7,21 @@ Takım Üyeleri: [Üye 1, Üye 2, Üye 3]
 # Ürün İle İlgili Bilgiler
 
 ## Ürün İsmi
-[Projenizin/Uygulamanızın Adı]
+*Bekleniyor...*
 
 ## Ürün Açıklaması
-[Geliştireceğiniz uygulamayı kısaca 2-3 cümle ile buraya açıklayın.]
+*Bekleniyor...*
 
 ## Ürün Özellikleri
-* [Özellik 1]
-* [Özellik 2]
+* *Bekleniyor...*
+* *Bekleniyor...*
 
 ## Hedef Kitle
-* [Hedef Kitle 1]
-* [Hedef Kitle 2]
+* *Bekleniyor...*
+* *Bekleniyor...*
 
 ## Product Backlog URL
-[Miro, Trello veya Jira Board Linkiniz]
+*Bekleniyor...*
 
 ---
 
