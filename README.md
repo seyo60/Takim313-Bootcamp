@@ -27,7 +27,7 @@ Kentsel alanlarda yalnız seyahat eden bireylerin, kadınların ve öğrencileri
 * Öğrenciler
 
 ## Product Backlog URL
-* [Product Backlog[(https://app.notion.com/p/edebiyat/38f780ef363a80579a7dce0ee1e54335?v=38f780ef363a80a9a200000c88d2153f&source=copy_link)
+* [Product Backlog](https://app.notion.com/p/edebiyat/38f780ef363a80579a7dce0ee1e54335?v=38f780ef363a80a9a200000c88d2153f&source=copy_link)
 
 ---
 
