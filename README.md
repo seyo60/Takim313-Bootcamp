@@ -23,7 +23,7 @@ Kentsel alanlarda yalnız seyahat eden bireylerin, kadınların ve öğrencileri
 * **Canlı İhbar ve Dinamik Risk Haritası (Real-Time Risk Mapping):** Kullanıcıların karşılaştığı anlık tehlikeleri bildirmesine olanak tanır. Doğal Dil İşleme (NLP) ile analiz edilen bu ihbarlar, Uber H3 altıgen mimarisi kullanılarak saniyeler içinde sokak ağındaki (OSMnx) risk ağırlıklarına dönüştürülür.
 * **Topluluk Odaklı Uyarı Sistemi (Community-Driven Alerts):** Cihazın GPS koordinatlarını anlık olarak takip ederek, kullanıcının rotası üzerinde yeni oluşan dinamik bir tehlike (örn: olay yeri) varsa proaktif bildirimler (Toast/Alert) üretir.
 * **Yüksek Performanslı İnteraktif Harita (Interactive Mapbox Experience):** Mapbox SDK entegrasyonu sayesinde, Chicago başta olmak üzere karmaşık şehir ağlarında akıcı, detaylı ve kullanıcı dostu bir harita navigasyon arayüzü sunar.
-* **Hızlı ve Asenkron Veri Senkronizasyonu (Asynchronous Data Sync):** Arka planda çalışan Dockerize edilmiş PostGIS ve FastAPI mimarisi sayesinde, binlerce sokak segmentinin risk skorlarını milisaniyeler içinde günceller ve mobil cihaza kesintisiz aktarır.<img width="1577" height="736" alt="Ekran Alıntısı" src="https://github.com/user-attachments/assets/dc1ebce7-18a1-4945-a464-5765b5662337" />
+* **Hızlı ve Asenkron Veri Senkronizasyonu (Asynchronous Data Sync):** Arka planda çalışan Dockerize edilmiş PostGIS ve FastAPI mimarisi sayesinde, binlerce sokak segmentinin risk skorlarını milisaniyeler içinde günceller ve mobil cihaza kesintisiz aktarır.
 
 
 ## Hedef Kitle
