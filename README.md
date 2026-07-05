@@ -39,12 +39,10 @@ Kentsel alanlarda yalnız seyahat eden bireylerin, kadınların ve öğrencileri
 # Sprint 1
 
 ## Uygulama Ekran Görüntüleri
-[Projenizin Prototip veya Expo ilk ekran görüntülerini buraya ekleyebilirsiniz]
 
 ---
 
 ## Uygulama Akış Şeması (App Map)
-[Kullanıcı akış diyagramını buraya ekleyebilirsiniz]
 
 ---
 
