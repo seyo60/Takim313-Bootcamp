@@ -1,98 +1,74 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import Mapbox, { Camera, MapView } from "@rnmapbox/maps";
+import { useUserLocation } from "@/hooks/useUserLocation";
+import { getMockRoute } from "@/lib/api";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? "");
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+// Chicago Downtown — fallback + demo area, since our backend data
+// (crime data, street graph) is Chicago-based.
+const CHICAGO: [number, number] = [-87.6298, 41.8781];
+
+export default function Index() {
+  const { coordinate, status, message } = useUserLocation();
+
+  // Center on the user once we have a real fix, otherwise stay on Chicago.
+  const center = coordinate ?? CHICAGO;
+  // Zoom in a little tighter when it's the user's actual location.
+  const zoom = status === "granted" ? 14 : 11;
+
+  // Task 2: confirm the mobile app can reach the FastAPI backend via ngrok.
+  useEffect(() => {
+    (async () => {
+      const route = await getMockRoute();
+      if (route) {
+        console.log("[backend] getMockRoute() response:", route);
+      } else {
+        console.log(
+          "[backend] getMockRoute() returned no data — check EXPO_PUBLIC_API_BASE_URL and the tunnel."
+        );
+      }
+    })();
+  }, []);
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <View style={styles.container}>
+      {/* Light street map, closest to the Google Maps look. */}
+      <MapView style={styles.map} styleURL="mapbox://styles/mapbox/streets-v12">
+        <Camera zoomLevel={zoom} centerCoordinate={center} animationDuration={600} />
+      </MapView>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      {/* Non-fatal notice when we couldn't use the real location. */}
+      {message ? (
+        <View style={styles.banner} pointerEvents="none">
+          <Text style={styles.bannerText}>{message}</Text>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
   },
-  safeArea: {
+  map: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+  banner: {
+    position: "absolute",
+    top: 60,
+    left: 16,
+    right: 16,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
   },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  bannerText: {
+    color: "#fff",
+    fontSize: 13,
+    textAlign: "center",
   },
 });
