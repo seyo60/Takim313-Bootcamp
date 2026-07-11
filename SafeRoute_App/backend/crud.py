@@ -27,11 +27,16 @@ async def get_nearby_risk_points(db: AsyncSession, user_lat: float, user_lng: fl
     result = await db.execute(query)
     return result.scalars().all()
 
-# Osman'ın mobil uygulamadan göndereceği canlı ihbarları kaydeden fonksiyon[cite: 1]
+# Osman'ın mobil uygulamadan göndereceği canlı ihbarları kaydeden fonksiyon
+# SONRASI (düzeltilmiş):
 async def create_report(db: AsyncSession, lat: float, lng: float, text: str) -> ReportModel:
-    report_geom = from_shape(Point(lng, lat), srid=4326)[cite: 1]
+    report_geom = from_shape(Point(lng, lat), srid=4326)
     new_report = ReportModel(
-        latitude=lat, longitude=lng, description=text, location=report_geom, created_at=datetime.utcnow()[cite: 1]
+        latitude=lat,
+        longitude=lng,
+        description=text,
+        location=report_geom,
+        created_at=datetime.utcnow()
     )
     db.add(new_report)
     await db.commit()
