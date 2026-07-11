@@ -28,7 +28,6 @@ async def get_nearby_risk_points(db: AsyncSession, user_lat: float, user_lng: fl
     return result.scalars().all()
 
 # Osman'ın mobil uygulamadan göndereceği canlı ihbarları kaydeden fonksiyon
-# SONRASI (düzeltilmiş):
 async def create_report(db: AsyncSession, lat: float, lng: float, text: str) -> ReportModel:
     report_geom = from_shape(Point(lng, lat), srid=4326)
     new_report = ReportModel(
