@@ -90,4 +90,3 @@ alembic upgrade head
 | POST | `/api/v1/report` | Kullanıcıdan gelen anlık tehlike ihbarını kaydeder |
 | GET | `/api/v1/heatmap` | Tüm risk noktalarını döner |
 | GET | `/api/v1/heatmap/nearby` | Belirli bir konuma yakın risk noktalarını döner |
-`
