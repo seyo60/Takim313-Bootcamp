@@ -92,7 +92,7 @@ alembic upgrade head
 | GET | `/api/v1/heatmap/nearby` | Belirli bir konuma yakın risk noktalarını döner |
 
 ## Proje Yapısı
-
+`
 backend/
 ├── main.py              # FastAPI uygulaması ve endpoint tanımları
 ├── config.py            # Ortam değişkenleri (.env okuma)
@@ -102,3 +102,4 @@ backend/
 ├── seed.py               # CSV'den test verisi yükleme script'i
 ├── generate_test_graph.py # Test amaçlı küçük bir OSMnx grafı üretir
 └── alembic/              # Veritabanı migration dosyaları
+`
