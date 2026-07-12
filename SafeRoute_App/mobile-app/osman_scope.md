@@ -86,3 +86,19 @@ Her ertelenen iş için 3 şeyi yaz:
 - Planda: `end-to-end.md`'de ilgili maddenin altına `⏳ Sonraya:` notu.
 
 **Amaç:** "sonra karar verilecek" dediğimiz her şey, karar gelince **tek dokunuşla** bağlanabilsin; hiçbir belirsizlik kod içinde kaybolmasın. Mock veri her zaman `types.ts`'teki tiplere uygun olsun ki gerçek veriye geçiş sadece veri kaynağını değiştirmek olsun (UI'a dokunmadan).
+
+---
+
+## 📌 Madde bitimi rutini (ÖNEMLİ — her maddede uygula)
+
+Her maddenin bitiminde, "Biten / Sonraya ayrılan" özetine ek olarak şu üçünü de MUTLAKA ver:
+
+**1. 🧪 Test senaryoları** — Osman'ın cihazda/emülatörde elle deneyebileceği somut adımlar:
+- "Şunu yap → şunu görmelisin" formatında, adım adım.
+- Mutlu yol + en az bir hata/kenar durumu (örn. "backend kapalıyken → şu banner çıkmalı", "izin reddedilince → Chicago'ya düşmeli").
+
+**2. 🔄 Ne değişti** — bu maddeden önce app nasıl davranıyordu, şimdi nasıl davranıyor (kullanıcı gözünden, dosya listesi değil).
+
+**3. ❓ Neden** — bu değişiklik neden yapıldı; projenin hangi hedefine/PDF kriterine hizmet ediyor, neden bu yöntem seçildi (alternatif varsa neden o değil).
+
+**Ek kural:** her madde bitiminde `git commit + push` yapılır (branch: `frontend/installation`), commit mesajında madde numarası geçer.
