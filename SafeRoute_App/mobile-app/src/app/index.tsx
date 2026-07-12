@@ -1,48 +1,74 @@
-import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Mapbox, { Camera, MapView } from "@rnmapbox/maps";
+import Mapbox, {
+  Camera,
+  LineLayer,
+  MapView,
+  ShapeSource,
+} from "@rnmapbox/maps";
 import { useUserLocation } from "@/hooks/useUserLocation";
-import { getMockRoute } from "@/lib/api";
+import { useRoute } from "@/hooks/useRoute";
+import { MOCK_START, MOCK_END, getRouteBounds } from "@/lib/mockRoute";
+import type { LngLat } from "@/lib/types";
 
 Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? "");
 
-// Chicago Downtown — fallback + demo area, since our backend data
-// (crime data, street graph) is Chicago-based.
-const CHICAGO: [number, number] = [-87.6298, 41.8781];
+// Chicago Downtown — fallback camera target while there's no route to frame.
+const CHICAGO: LngLat = [-87.6298, 41.8781];
+
+// Mapbox layer style (a style-spec object, not a React Native style).
+const routeLineStyle = {
+  lineColor: "#1D6FEB",
+  lineWidth: 5,
+  lineCap: "round",
+  lineJoin: "round",
+} as const;
 
 export default function Index() {
-  const { coordinate, status, message } = useUserLocation();
+  // Used later as the route origin (item 3) and for the fallback banner now.
+  const { message } = useUserLocation();
 
-  // Center on the user once we have a real fix, otherwise stay on Chicago.
-  const center = coordinate ?? CHICAGO;
-  // Zoom in a little tighter when it's the user's actual location.
-  const zoom = status === "granted" ? 14 : 11;
+  // Item 2: fetch the route through the API layer (mock-backed until §A is
+  // live) and draw whatever it returns.
+  // TODO(osman): item 3 — replace MOCK_START/MOCK_END with the user's real
+  // location as origin and the searched/tapped destination.
+  const { route, status } = useRoute(MOCK_START, MOCK_END);
 
-  // Task 2: confirm the mobile app can reach the FastAPI backend via ngrok.
-  useEffect(() => {
-    (async () => {
-      const route = await getMockRoute();
-      if (route) {
-        console.log("[backend] getMockRoute() response:", route);
-      } else {
-        console.log(
-          "[backend] getMockRoute() returned no data — check EXPO_PUBLIC_API_BASE_URL and the tunnel."
-        );
-      }
-    })();
-  }, []);
+  const bounds = route
+    ? getRouteBounds(route.route.coordinates as LngLat[])
+    : null;
+
+  // Route fetch problems surface in the same banner slot as location issues.
+  // TODO(osman): item 7 — proper loading spinner + retry UX.
+  const bannerText =
+    status === "error"
+      ? "Rota alınamadı — backend'e ulaşılamıyor. (Bağlantıyı kontrol et)"
+      : message;
 
   return (
     <View style={styles.container}>
       {/* Light street map, closest to the Google Maps look. */}
       <MapView style={styles.map} styleURL="mapbox://styles/mapbox/streets-v12">
-        <Camera zoomLevel={zoom} centerCoordinate={center} animationDuration={600} />
+        {bounds ? (
+          <Camera bounds={bounds} animationDuration={800} />
+        ) : (
+          <Camera zoomLevel={11} centerCoordinate={CHICAGO} />
+        )}
+
+        {/* The safe route line, drawn from the API response. */}
+        {route ? (
+          <ShapeSource
+            id="routeSource"
+            shape={{ type: "Feature", properties: {}, geometry: route.route }}
+          >
+            <LineLayer id="routeLine" style={routeLineStyle} />
+          </ShapeSource>
+        ) : null}
       </MapView>
 
-      {/* Non-fatal notice when we couldn't use the real location. */}
-      {message ? (
+      {/* Non-fatal notices (location fallback, route fetch failure). */}
+      {bannerText ? (
         <View style={styles.banner} pointerEvents="none">
-          <Text style={styles.bannerText}>{message}</Text>
+          <Text style={styles.bannerText}>{bannerText}</Text>
         </View>
       ) : null}
     </View>
