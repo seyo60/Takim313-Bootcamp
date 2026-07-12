@@ -28,10 +28,15 @@
 > - **`hour` parametresi** — Neden: kim gönderecek belli değil (§A). Nasıl: biz göndereceksek `getRoute()`'ta `new Date().getHours()` ekle.
 > - **Gerçek origin/dest** — Neden: hedef seçimi Madde 3'ün işi. Nasıl: `index.tsx`'teki `MOCK_START/MOCK_END` yerine kullanıcı konumu + seçilen hedef geçilecek (TODO yorumu yerinde).
 
-### 3. Hedef seçme UI'ı (arama + haritaya dokunma)
+### 3. Hedef seçme UI'ı (arama + haritaya dokunma) — ✅ TAMAMLANDI
 `src/lib/geocoding.ts` — Mapbox Geocoding ile adres/yer arama çubuğu. Ayrıca haritaya dokununca oraya hedef pin'i koyma. Origin otomatik olarak kullanıcının konumu (mevcut `useUserLocation`).
 **Bitince:** kullanıcı bir hedef seçebiliyor, seçince 2. adımdaki rota akışı tetikleniyor.
 *Bağımlılık yok — Mapbox Geocoding client-side, elimdeki `pk.` token yetiyor.*
+> **✅ Yapıldı:** `src/lib/geocoding.ts` (Mapbox Geocoding v6, proximity bias'lı `searchPlaces()`, hata durumunda boş liste) · `src/components/DestinationSearchBar.tsx` (350ms debounce, sonuç listesi, "sonuç bulunamadı" durumu) · `index.tsx`: haritaya dokununca hedef pin (kırmızı nokta), arama sonucundan hedef seçme, "✕ Hedefi temizle" butonu, rota artık hedef seçilince tetikleniyor (öncesinde idle), origin = kullanıcı konumu (yoksa Chicago) · "Güvenli rota hesaplanıyor…" yükleme banner'ı · `tsc` temiz.
+> **⏳ Sonraya ayrılan:**
+> - **Rota geometrisi hedefe uymuyor** — Neden: mock rota sabit Chicago çizgisi; nereye dokunursan dokun aynı çizgi çizilir. Nasıl: `USE_MOCK_ROUTE = false` olunca kendiliğinden düzelir (backend gerçek origin/dest'e göre hesaplar). Kod değişikliği gerekmez.
+> - **Görsel cila (arama çubuğu/pin/buton stilleri)** — Neden: Figma bekleniyor (Madde 9). Nasıl: `src/theme/` kurulunca stiller oradan beslenecek.
+> - **Cihazda prova** — arama→seçim→çizim akışı gerçek cihazda görsel olarak doğrulanacak (Madde 1'deki provayla birlikte).
 
 ### 4. Rota bilgi kartı (mesafe / süre / risk skoru)
 Rota çizilince alt kısımda `RouteInfoCard` göster: mesafe, tahmini süre, rota risk skoru (0–100).
