@@ -17,6 +17,7 @@ import { getRouteBounds } from "@/lib/mockRoute";
 import { riskPointsToFeatureCollection } from "@/lib/mockHeatmap";
 import { DestinationSearchBar } from "@/components/DestinationSearchBar";
 import { RouteInfoCard } from "@/components/RouteInfoCard";
+import { StatusBanner, type BannerVariant } from "@/components/StatusBanner";
 import type { GeocodingResult } from "@/lib/geocoding";
 import type { LngLat } from "@/lib/types";
 
@@ -106,7 +107,11 @@ export default function Index() {
 
   // Item 3: the route flow now waits for a destination — the hook stays idle
   // until the user picks one (search or map tap).
-  const { route, status } = useRoute(destination ? origin : null, destination);
+  const {
+    route,
+    status,
+    retry: retryRoute,
+  } = useRoute(destination ? origin : null, destination);
 
   const handleSearchSelect = useCallback((result: GeocodingResult) => {
     setDestination(result.coordinate);
@@ -124,17 +129,30 @@ export default function Index() {
     ? getRouteBounds(route.route.coordinates as LngLat[])
     : null;
 
-  // Route fetch problems share the banner slot with location fallbacks.
-  // TODO(osman): item 7 — proper loading spinner + retry UX.
-  const bannerText =
+  // Item 7: one banner slot, priority: route error > route loading >
+  // heatmap error > location fallback info.
+  const banner: {
+    variant: BannerVariant;
+    text: string;
+    onRetry?: () => void;
+  } | null =
     status === "error"
-      ? "Rota alınamadı — backend'e ulaşılamıyor. (Bağlantıyı kontrol et)"
+      ? {
+          variant: "error",
+          text: "Rota alınamadı — backend'e ulaşılamıyor.",
+          onRetry: retryRoute,
+        }
       : status === "loading"
-        ? "Güvenli rota hesaplanıyor…"
-        : (locationMessage ??
-          (heatmapStatus === "error" && showHeatmap
-            ? "Isı haritası yüklenemedi."
-            : null));
+        ? { variant: "loading", text: "Güvenli rota hesaplanıyor…" }
+        : heatmapStatus === "error" && showHeatmap
+          ? {
+              variant: "error",
+              text: "Isı haritası yüklenemedi.",
+              onRetry: refetchHeatmap,
+            }
+          : locationMessage
+            ? { variant: "info", text: locationMessage }
+            : null;
 
   return (
     <View style={styles.container}>
@@ -227,11 +245,13 @@ export default function Index() {
         </Pressable>
       ) : null}
 
-      {/* Non-fatal notices (location fallback, route loading/failure). */}
-      {bannerText ? (
-        <View style={styles.banner} pointerEvents="none">
-          <Text style={styles.bannerText}>{bannerText}</Text>
-        </View>
+      {/* Item 7: non-fatal notices with spinner/retry (single slot). */}
+      {banner ? (
+        <StatusBanner
+          variant={banner.variant}
+          text={banner.text}
+          onRetry={banner.onRetry}
+        />
       ) : null}
     </View>
   );
@@ -304,20 +324,5 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 14,
     color: "#111",
-  },
-  banner: {
-    position: "absolute",
-    bottom: 96,
-    left: 16,
-    right: 16,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-  },
-  bannerText: {
-    color: "#fff",
-    fontSize: 13,
-    textAlign: "center",
   },
 });

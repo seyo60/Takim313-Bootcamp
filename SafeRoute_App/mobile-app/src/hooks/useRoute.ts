@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getRoute } from "@/lib/api";
 import type { LngLat, RouteResponse } from "@/lib/types";
 
@@ -11,6 +11,8 @@ export type RouteStatus =
 export interface UseRouteResult {
   route: RouteResponse | null;
   status: RouteStatus;
+  /** Re-runs the failed request (item 7 "Tekrar dene"). */
+  retry: () => void;
 }
 
 /**
@@ -25,10 +27,12 @@ export function useRoute(
   start: LngLat | null,
   end: LngLat | null
 ): UseRouteResult {
-  const [result, setResult] = useState<UseRouteResult>({
+  const [result, setResult] = useState<Omit<UseRouteResult, "retry">>({
     route: null,
     status: "idle",
   });
+  // Bumping this re-runs the fetch effect with the same coordinates.
+  const [nonce, setNonce] = useState(0);
 
   // Depend on the coordinate values (not array identity) so a re-render with
   // an equal-but-new array doesn't refetch.
@@ -64,7 +68,9 @@ export function useRoute(
     return () => {
       cancelled = true;
     };
-  }, [startLng, startLat, endLng, endLat]);
+  }, [startLng, startLat, endLng, endLat, nonce]);
 
-  return result;
+  const retry = useCallback(() => setNonce((n) => n + 1), []);
+
+  return { ...result, retry };
 }

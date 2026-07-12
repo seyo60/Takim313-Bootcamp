@@ -69,10 +69,12 @@ Rota çizilince alt kısımda `RouteInfoCard` göster: mesafe, tahmini süre, ro
 > **📝 Sonradan düzeltme notu (kod hazır, anahtar/ince ayar):** `USE_MOCK_REPORT = false` yapınca gerçek endpoint'e geçer; §C body alan adları farklıysa `types.ts` güncellenir. Mock'un "haritaya anında leke ekleme" davranışı gerçekte YOK (analiz arka planda) — gerçek modda otomatik olarak devre dışı kalır, ekstra iş gerekmez.
 > **⏳ Gerçekten sonraya:** yanıt senkron analiz de içerirse sonucu ekranda göstermek (§C netleşince).
 
-### 7. Yükleme & hata UX'i
+### 7. Yükleme & hata UX'i — ✅ TAMAMLANDI
 Rota / heatmap / rapor çağrıları için spinner ve görünür hata banner'ları (mevcut `logRequestError` mantığının üstüne kullanıcıya görünen UI). Backend down iken app çökmemeli.
 **Bitince:** her durumda anlaşılır geri bildirim var, çökme yok.
 *Bağımlılık yok.*
+> **✅ Yapıldı:** `src/components/StatusBanner.tsx` (3 varyant: info / loading+spinner / error kırmızı + "Tekrar dene" butonu) · `useRoute`'a `retry()` eklendi · `index.tsx`'te tek banner slotu, öncelik: rota hatası > rota yükleniyor > heatmap hatası > konum bilgisi; rota ve heatmap hatalarında retry bağlı · rapor ekranının kendi gönderim/hata durumları zaten Madde 6'da yapılmıştı · `tsc` temiz.
+> **📝 Sonradan düzeltme notu:** banner metinleri/renkleri Figma gelince `src/theme/`'e taşınacak (Madde 9).
 
 ### 8. "En kısa vs en güvenli" kıyas görünümü
 Varsa iki rotayı farklı renkte çiz (güvenli = yeşil, en kısa = gri), farkı vurgula. Demo değeri yüksek.
