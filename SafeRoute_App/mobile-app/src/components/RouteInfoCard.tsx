@@ -37,38 +37,61 @@ export function RouteInfoCard({ route, onClear }: Props) {
 
   return (
     <View style={styles.card}>
-      <View style={styles.stats}>
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>{formatDistance(route.distance_m)}</Text>
-          <Text style={styles.statLabel}>Mesafe</Text>
+      {/* Item 8: legend, shown only when the shortest route is on the map. */}
+      {route.shortest ? (
+        <View style={styles.legend}>
+          <View style={styles.legendItem}>
+            <View style={styles.legendLineSafe} />
+            <Text style={styles.legendText}>Güvenli rota</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={styles.legendLineShortest} />
+            <Text style={styles.legendText}>En kısa (riskli olabilir)</Text>
+          </View>
+        </View>
+      ) : null}
+
+      <View style={styles.mainRow}>
+        <View style={styles.stats}>
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>
+              {formatDistance(route.distance_m)}
+            </Text>
+            <Text style={styles.statLabel}>Mesafe</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>
+              {formatDuration(route.duration_s)}
+            </Text>
+            <Text style={styles.statLabel}>Yürüyüş</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.stat}>
+            <Text style={[styles.statValue, { color: risk.color }]}>
+              {Math.round(route.risk_score)}
+            </Text>
+            <Text style={[styles.statLabel, { color: risk.color }]}>
+              {risk.label}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.divider} />
-
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>{formatDuration(route.duration_s)}</Text>
-          <Text style={styles.statLabel}>Yürüyüş</Text>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.stat}>
-          <Text style={[styles.statValue, { color: risk.color }]}>
-            {Math.round(route.risk_score)}
-          </Text>
-          <Text style={[styles.statLabel, { color: risk.color }]}>
-            {risk.label}
-          </Text>
-        </View>
+        <Pressable
+          style={({ pressed }) => [
+            styles.close,
+            pressed && styles.closePressed,
+          ]}
+          onPress={onClear}
+          hitSlop={8}
+        >
+          <Text style={styles.closeText}>✕</Text>
+        </Pressable>
       </View>
-
-      <Pressable
-        style={({ pressed }) => [styles.close, pressed && styles.closePressed]}
-        onPress={onClear}
-        hitSlop={8}
-      >
-        <Text style={styles.closeText}>✕</Text>
-      </Pressable>
     </View>
   );
 }
@@ -79,8 +102,6 @@ const styles = StyleSheet.create({
     bottom: 24,
     left: 16,
     right: 16,
-    flexDirection: "row",
-    alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 14,
     paddingVertical: 14,
@@ -90,6 +111,41 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
+  },
+  legend: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 16,
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#e5e5e5",
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  legendLineSafe: {
+    width: 22,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#1D6FEB",
+  },
+  legendLineShortest: {
+    width: 22,
+    height: 0,
+    borderBottomWidth: 3,
+    borderStyle: "dashed",
+    borderColor: "#8A8A8A",
+  },
+  legendText: {
+    fontSize: 12,
+    color: "#555",
+  },
+  mainRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   stats: {
     flex: 1,

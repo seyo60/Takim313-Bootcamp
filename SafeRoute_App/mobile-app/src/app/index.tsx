@@ -9,6 +9,7 @@ import Mapbox, {
   MapView,
   ShapeSource,
   type HeatmapLayerStyle,
+  type LineLayerStyle,
 } from "@rnmapbox/maps";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { useRoute } from "@/hooks/useRoute";
@@ -34,6 +35,17 @@ const routeLineStyle = {
   lineCap: "round",
   lineJoin: "round",
 } as const;
+
+// The plain shortest route: dashed gray, visually secondary to the safe route.
+// (Plan said green for the safe route, but green would blend into the
+// heatmap's low-risk ramp — blue vs gray reads clearer on this basemap.)
+const shortestLineStyle: LineLayerStyle = {
+  lineColor: "#8A8A8A",
+  lineWidth: 4,
+  lineCap: "round",
+  lineJoin: "round",
+  lineDasharray: [1.5, 1.5],
+};
 
 const destinationPinStyle = {
   circleRadius: 8,
@@ -125,8 +137,12 @@ export default function Index() {
 
   const clearDestination = useCallback(() => setDestination(null), []);
 
+  // Frame both routes (safe + shortest) when the comparison is available.
   const bounds = route
-    ? getRouteBounds(route.route.coordinates as LngLat[])
+    ? getRouteBounds([
+        ...(route.route.coordinates as LngLat[]),
+        ...((route.shortest?.coordinates as LngLat[] | undefined) ?? []),
+      ])
     : null;
 
   // Item 7: one banner slot, priority: route error > route loading >
@@ -179,6 +195,20 @@ export default function Index() {
             shape={riskPointsToFeatureCollection(riskPoints)}
           >
             <HeatmapLayer id="riskHeatmap" style={heatmapStyle} />
+          </ShapeSource>
+        ) : null}
+
+        {/* Item 8: the plain shortest route (dashed gray), under the safe one. */}
+        {route?.shortest ? (
+          <ShapeSource
+            id="shortestSource"
+            shape={{
+              type: "Feature",
+              properties: {},
+              geometry: route.shortest,
+            }}
+          >
+            <LineLayer id="shortestLine" style={shortestLineStyle} />
           </ShapeSource>
         ) : null}
 

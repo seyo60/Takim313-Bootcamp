@@ -76,10 +76,12 @@ Rota / heatmap / rapor çağrıları için spinner ve görünür hata banner'lar
 > **✅ Yapıldı:** `src/components/StatusBanner.tsx` (3 varyant: info / loading+spinner / error kırmızı + "Tekrar dene" butonu) · `useRoute`'a `retry()` eklendi · `index.tsx`'te tek banner slotu, öncelik: rota hatası > rota yükleniyor > heatmap hatası > konum bilgisi; rota ve heatmap hatalarında retry bağlı · rapor ekranının kendi gönderim/hata durumları zaten Madde 6'da yapılmıştı · `tsc` temiz.
 > **📝 Sonradan düzeltme notu:** banner metinleri/renkleri Figma gelince `src/theme/`'e taşınacak (Madde 9).
 
-### 8. "En kısa vs en güvenli" kıyas görünümü
+### 8. "En kısa vs en güvenli" kıyas görünümü — ✅ TAMAMLANDI (mock veriyle)
 Varsa iki rotayı farklı renkte çiz (güvenli = yeşil, en kısa = gri), farkı vurgula. Demo değeri yüksek.
 **Bitince:** kullanıcı iki rotayı karşılaştırabiliyor.
-> 🔗 **Bağımlılık — Seymen:** `GET /api/v1/route` yanıtında opsiyonel `shortest` rotasının da dönmesi gerekir (§A).
+> 🔗 **Bağımlılık — Seymen:** `POST /api/v1/route` yanıtında opsiyonel `shortest` rotasının da dönmesi gerekir (§A).
+> **✅ Yapıldı:** mock yanıta `shortest` (daha direkt diyagonal hat) eklendi · `index.tsx`: kesikli **gri** "en kısa" çizgisi güvenli rotanın altında, kamera iki rotayı birden kadraja alıyor · `RouteInfoCard`'a lejant satırı ("— Güvenli rota" mavi / "┅ En kısa (riskli olabilir)" gri), sadece `shortest` varsa görünür · `tsc` temiz.
+> **📝 Sonradan düzeltme notu:** Plan "güvenli = yeşil" diyordu; yeşil, heatmap'in düşük-risk rampasıyla karışacağı için güvenli rotayı **mavi** bıraktım. Figma'da farklı karar çıkarsa tek satır (`routeLineStyle.lineColor`). Backend `shortest` döndürmezse UI zaten kendiliğinden kıyassız çalışır (opsiyonel alan).
 
 ### 9. Figma tasarımını uygula (polish)
 `src/theme/` — renk paleti, tipografi. Buton/kart/arama çubuğu stilleri, ikonlar, splash. Tüm ekranları tasarıma göre düzenle.

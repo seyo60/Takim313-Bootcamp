@@ -30,6 +30,18 @@ export const MOCK_END: LngLat =
   MOCK_ROUTE_COORDINATES[MOCK_ROUTE_COORDINATES.length - 1];
 
 /**
+ * The plain shortest route between the same endpoints — a more direct diagonal
+ * that ignores risk. Drawn dashed gray for the "shortest vs safest" comparison
+ * (item 8).
+ */
+export const MOCK_SHORTEST_COORDINATES: LngLat[] = [
+  MOCK_ROUTE_COORDINATES[0],
+  [-87.632, 41.8797],
+  [-87.627, 41.8812],
+  MOCK_ROUTE_COORDINATES[MOCK_ROUTE_COORDINATES.length - 1],
+];
+
+/**
  * Builds a fake RouteResponse the way the backend would.
  *
  * Note: the geometry is always the fixed Chicago line regardless of the
@@ -49,7 +61,13 @@ export function buildMockRouteResponse(
     distance_m: 1350,
     duration_s: 1020, // ~17 min walk
     risk_score: 24, // fairly safe demo value
-    // `shortest` intentionally omitted until §A confirms it (item 8).
+    // The direct-but-riskier alternative, for the comparison view (item 8).
+    // TODO(osman): §A — if the backend ends up not returning `shortest`,
+    // the UI already handles its absence (comparison simply not shown).
+    shortest: {
+      type: "LineString",
+      coordinates: MOCK_SHORTEST_COORDINATES,
+    },
   };
 }
 
