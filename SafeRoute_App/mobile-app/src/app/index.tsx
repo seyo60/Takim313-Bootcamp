@@ -3,13 +3,17 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import Mapbox, {
   Camera,
   CircleLayer,
+  HeatmapLayer,
   LineLayer,
   MapView,
   ShapeSource,
+  type HeatmapLayerStyle,
 } from "@rnmapbox/maps";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { useRoute } from "@/hooks/useRoute";
+import { useHeatmap } from "@/hooks/useHeatmap";
 import { getRouteBounds } from "@/lib/mockRoute";
+import { riskPointsToFeatureCollection } from "@/lib/mockHeatmap";
 import { DestinationSearchBar } from "@/components/DestinationSearchBar";
 import { RouteInfoCard } from "@/components/RouteInfoCard";
 import type { GeocodingResult } from "@/lib/geocoding";
@@ -36,10 +40,46 @@ const destinationPinStyle = {
   circleStrokeColor: "#fff",
 } as const;
 
+// Risk heatmap: weight scales with each point's total_risk (0-100); the color
+// ramp goes transparent → green → amber → orange → red as density rises.
+const heatmapStyle: HeatmapLayerStyle = {
+  heatmapRadius: 40,
+  heatmapOpacity: 0.7,
+  heatmapWeight: [
+    "interpolate",
+    ["linear"],
+    ["get", "total_risk"],
+    0,
+    0,
+    100,
+    1,
+  ],
+  heatmapIntensity: ["interpolate", ["linear"], ["zoom"], 8, 0.6, 16, 1.6],
+  heatmapColor: [
+    "interpolate",
+    ["linear"],
+    ["heatmap-density"],
+    0,
+    "rgba(0,0,0,0)",
+    0.2,
+    "rgba(46,158,68,0.35)",
+    0.45,
+    "rgba(255,193,7,0.55)",
+    0.7,
+    "rgba(232,137,12,0.75)",
+    1,
+    "rgba(229,72,77,0.9)",
+  ],
+};
+
 export default function Index() {
   const { coordinate: userCoordinate, message: locationMessage } =
     useUserLocation();
   const [destination, setDestination] = useState<LngLat | null>(null);
+
+  // Item 5: risk heatmap data + visibility toggle.
+  const { points: riskPoints, status: heatmapStatus } = useHeatmap();
+  const [showHeatmap, setShowHeatmap] = useState(true);
 
   // Route origin: the user's real position when we have one, else the Chicago
   // demo center (backend graph only covers Chicago anyway).
@@ -72,7 +112,10 @@ export default function Index() {
       ? "Rota alınamadı — backend'e ulaşılamıyor. (Bağlantıyı kontrol et)"
       : status === "loading"
         ? "Güvenli rota hesaplanıyor…"
-        : locationMessage;
+        : (locationMessage ??
+          (heatmapStatus === "error" && showHeatmap
+            ? "Isı haritası yüklenemedi."
+            : null));
 
   return (
     <View style={styles.container}>
@@ -91,6 +134,16 @@ export default function Index() {
             animationDuration={600}
           />
         )}
+
+        {/* Item 5: risk heatmap (green → red as risk density rises). */}
+        {showHeatmap && riskPoints.length > 0 ? (
+          <ShapeSource
+            id="heatmapSource"
+            shape={riskPointsToFeatureCollection(riskPoints)}
+          >
+            <HeatmapLayer id="riskHeatmap" style={heatmapStyle} />
+          </ShapeSource>
+        ) : null}
 
         {/* The safe route line, drawn from the API response. */}
         {route ? (
@@ -120,6 +173,17 @@ export default function Index() {
       {/* Floating destination search (Mapbox Geocoding, client-side). */}
       <DestinationSearchBar proximity={origin} onSelect={handleSearchSelect} />
 
+      {/* Heatmap visibility toggle. */}
+      <Pressable
+        style={[
+          styles.heatmapToggle,
+          showHeatmap && styles.heatmapToggleActive,
+        ]}
+        onPress={() => setShowHeatmap((visible) => !visible)}
+      >
+        <Text style={styles.heatmapToggleText}>🔥</Text>
+      </Pressable>
+
       {/* Item 4: route summary (distance / time / risk) with its own ✕. */}
       {route ? <RouteInfoCard route={route} onClear={clearDestination} /> : null}
 
@@ -147,6 +211,30 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  heatmapToggle: {
+    position: "absolute",
+    top: 120,
+    right: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  heatmapToggleActive: {
+    backgroundColor: "#FFE8E0",
+    borderWidth: 1,
+    borderColor: "#E5484D",
+  },
+  heatmapToggleText: {
+    fontSize: 18,
   },
   clearButton: {
     position: "absolute",

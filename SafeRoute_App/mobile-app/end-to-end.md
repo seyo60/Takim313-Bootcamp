@@ -48,11 +48,17 @@ Rota çizilince alt kısımda `RouteInfoCard` göster: mesafe, tahmini süre, ro
 > - **Risk eşikleri (33/66)** — Neden: UI varsayımı, kontrat değil. Nasıl: Merve'nin skor dağılımına göre gerekirse `riskInfo()` eşikleri güncellenir.
 > - **Kart stili** — Figma (Madde 9).
 
-### 5. Heatmap (risk ısı haritası) katmanı
+### 5. Heatmap (risk ısı haritası) katmanı — ✅ TAMAMLANDI (mock veriyle)
 `getHeatmap()` çağrısı + risk noktalarını haritada göster: `HeatmapLayer` (ağırlık = `total_risk`) veya `CircleLayer` (renk = `total_risk`, yeşil→turuncu→kırmızı). Aç/kapa toggle butonu. Performans için tüm şehir yerine `GET /api/v1/heatmap/nearby` ile sadece yakındaki noktaları çekmeyi değerlendir.
 **Bitince:** riskli bölgeler haritada renkleniyor, toggle çalışıyor.
 > 🔗 **Bağımlılık — Seymen:** `GET /api/v1/heatmap` (ve `/heatmap/nearby`) endpoint'i ve **risk noktalarının kesin JSON şekli** lazım (§B).
 > 🔗 **Bağımlılık — Merve & Mehmet Ali:** katmanın **gerçek** veriyle dolması için batch prediction sonuçlarının Supabase'e yazılmış olması gerekir. Onlar bitene kadar backend'den **mock heatmap** isterim; katmanı mock ile bitiririm.
+> **✅ Yapıldı:** `src/lib/mockHeatmap.ts` (3 deterministik risk kümesi: yüksek/orta/düşük + `riskPointsToFeatureCollection()`) · `api.ts`'e `getHeatmap()` (`USE_MOCK_HEATMAP` anahtarı, gerçek GET kodu yazılı) · `src/hooks/useHeatmap.ts` · `index.tsx`: `HeatmapLayer` (`total_risk` ağırlıklı, şeffaf→yeşil→amber→kırmızı rampa), sağ üstte 🔥 toggle (varsayılan açık), yüklenemezse banner. `tsc` temiz.
+> **⏳ Sonraya ayrılan:**
+> - **Gerçek veriye geçiş** — Neden: endpoint + batch prediction hazır değil. Nasıl: `USE_MOCK_HEATMAP = false`; §B yanıtı FeatureCollection çıkarsa sadece `getHeatmap()` içindeki parse değişir.
+> - **`/heatmap/nearby` optimizasyonu** — Neden: tüm şehir payload'ının boyutu bilinmiyor. Nasıl: ağır kalırsa `getHeatmap()`'i nearby endpoint'ine + kullanıcı konumuna geçir (TODO yorumu `api.ts`'te).
+> - **Rapor sonrası yenileme** — Neden: Madde 6'nın işi. Nasıl: `useHeatmap`'e `refetch()` eklenecek (TODO yorumu hook'ta).
+> - **Rampa/yarıçap ince ayarı** — gerçek veri dağılımı görülünce.
 
 ### 6. Tehlike bildirim ekranı
 `src/app/report.tsx` — serbest metin girişi + "Gönder". `POST /api/v1/report` çağrısı, "bildirimin alındı" onay mesajı. Not: analiz **arka planda LLM ile** yapılıyor, yani risk artışı anında dönmez → onay verip heatmap'i biraz sonra (veya kullanıcı yenileyince) tazelerim.

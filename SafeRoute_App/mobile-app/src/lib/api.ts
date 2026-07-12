@@ -1,6 +1,7 @@
 import axios, { AxiosError } from "axios";
-import type { LngLat, RouteRequest, RouteResponse } from "./types";
+import type { LngLat, RiskPoint, RouteRequest, RouteResponse } from "./types";
 import { buildMockRouteResponse } from "./mockRoute";
+import { MOCK_RISK_POINTS } from "./mockHeatmap";
 
 /**
  * While the backend endpoints are not live yet, API calls below return local
@@ -10,6 +11,9 @@ import { buildMockRouteResponse } from "./mockRoute";
  * TODO(osman): set to false when POST /api/v1/route is live (§A in end-to-end.md).
  */
 const USE_MOCK_ROUTE = true;
+
+/** TODO(osman): set to false when GET /api/v1/heatmap is live (§B). */
+const USE_MOCK_HEATMAP = true;
 
 /**
  * Backend base URL. Set EXPO_PUBLIC_API_BASE_URL in .env to your teammate's
@@ -98,6 +102,32 @@ export async function getRoute(
     return response.data;
   } catch (error) {
     logRequestError("getRoute (POST /api/v1/route)", error);
+    return null;
+  }
+}
+
+/**
+ * Fetches all risk points for the heatmap layer (GET /api/v1/heatmap).
+ * Returns null on failure — never throws.
+ *
+ * While USE_MOCK_HEATMAP is true, resolves with local mock clusters instead.
+ *
+ * TODO(osman): §B pending — response may be a GeoJSON FeatureCollection
+ * instead of a flat array; adjust the parsing here (only here) if so.
+ * TODO(osman): if the full-city payload turns out too heavy, switch to
+ * GET /api/v1/heatmap/nearby with the user's location + radius.
+ */
+export async function getHeatmap(): Promise<RiskPoint[] | null> {
+  if (USE_MOCK_HEATMAP) {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    return MOCK_RISK_POINTS;
+  }
+
+  try {
+    const response = await api.get<RiskPoint[]>("/api/v1/heatmap");
+    return response.data;
+  } catch (error) {
+    logRequestError("getHeatmap (GET /api/v1/heatmap)", error);
     return null;
   }
 }
