@@ -1,61 +1,66 @@
 # backend/seed.py
+"""
+Bu script SADECE veri yukler, sema (schema) olusturmaz/silmez.
+Tablolarin var oldugundan emin olmak icin once 'alembic upgrade head'
+calistirilmis olmali.
+"""
 import asyncio
 import csv
-from datetime import datetime, timezone  # Saat dilimi dönüşümleri için
-import h3  # Dinamik H3 indeksi üretimi (v4+ uyumlu)
+from datetime import datetime, timezone
+import h3
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import delete
 from geoalchemy2.shape import from_shape
 from shapely.geometry import Point
 
 from config import settings
-from models import Base, H3HeatmapModel
+from models import H3HeatmapModel
 
-# Asenkron veritabanı motoru yapılandırması
 engine = create_async_engine(settings.database_url, echo=False)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+# Toplama formulu ile AYNI agirliklar - crud.py'deki formulle tutarli olmali
+HISTORICAL_WEIGHT = 0.4
+LIVE_WEIGHT = 0.5
+SOCIAL_WEIGHT = 0.1
 
 
 async def seed_data():
     print("Veri aktarımı (Seeding) başlatılıyor...")
 
-    # 1. CSV Dosyasının konumu (Data Science klasöründen temiz veriyi okur)
     csv_path = "../data-science/chicago_clean_data.csv"
 
     async with AsyncSessionLocal() as session:
-        async with engine.begin() as conn:
-            # Sadece h3_heatmap tablosunu temizliyoruz, reports tablosuna dokunmuyoruz
-            print("Sadece h3_heatmap tablosu temizleniyor (reports korunuyor)...")
-            await conn.run_sync(
-                lambda sync_conn: H3HeatmapModel.__table__.drop(sync_conn, checkfirst=True)
-            )
-
-            # Güncel modellerle tabloları yeniden oluşturuyoruz
-            print("Tablolar yeniden oluşturuluyor...")
-            await conn.run_sync(Base.metadata.create_all)
+        # Sadece VERIYI temizliyoruz (DELETE), tabloyu DROP etmiyoruz.
+        # Sema yonetimi tamamen Alembic'in sorumlulugunda.
+        print("Mevcut h3_heatmap satırları temizleniyor (tablo yapısına dokunulmuyor)...")
+        await session.execute(delete(H3HeatmapModel))
+        await session.commit()
 
         with open(csv_path, mode='r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
 
             bulk_records = []
             for row in reader:
-                # WKT formatındaki LINESTRING yapısından koordinat çiftini ayıklama
                 raw_geom = row['geometry'].replace("LINESTRING (", "").replace(")", "")
                 first_coord = raw_geom.split(",")[0].strip().split(" ")
                 lng = float(first_coord[0])
                 lat = float(first_coord[1])
 
-                # PostGIS (GeoAlchemy2) için coğrafi nokta geometrisi üretimi
                 point_geom = from_shape(Point(lng, lat), srid=4326)
-
-                # H3 v4+ standardına uygun olarak dinamik hücre indeksi üretimi
                 computed_h3 = h3.latlng_to_cell(lat, lng, 9)
-
-                # domestic verisini string'den boolean tipe dönüştürme
                 is_domestic = row.get('domestic', 'False').lower() in ['true', '1', 't']
-
-                # asyncpg uyuşmazlığını çözmek için tzinfo içermeyen (naive) UTC zaman damgası üretiyoruz
                 naive_utc_datetime = datetime.now(timezone.utc).replace(tzinfo=None)
+
+                historical_risk = float(row['anlik_risk'])
+
+                # ONEMLI: crud.py'deki update_h3_live_risk / update_h3_social_risk
+                # fonksiyonlarindaki AYNI agirlikli formulu burada da uyguluyoruz.
+                # Boylece bir bolgeye ilk canli ihbar geldiginde total_risk
+                # beklenmedik sekilde dusmuyor - zaten ayni formulle hesaplanmis oluyor.
+                # risk_live ve risk_social henuz 0 oldugu icin sadece historical katkisi var.
+                total_risk = historical_risk * HISTORICAL_WEIGHT
 
                 bulk_records.append(
                     H3HeatmapModel(
@@ -63,10 +68,13 @@ async def seed_data():
                         lat=lat,
                         lng=lng,
                         location=point_geom,
-                        risk_weight=float(row['anlik_risk']),
+                        risk_historical=historical_risk,
+                        risk_live=0.0,
+                        risk_social=0.0,
+                        total_risk=total_risk,
                         domestic=is_domestic,
                         location_description=row['name'],
-                        date=naive_utc_datetime  # Hata çıkaran timezone uyuşmazlığı düzeltildi!
+                        date=naive_utc_datetime
                     )
                 )
 
