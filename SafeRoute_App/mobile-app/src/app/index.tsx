@@ -11,6 +11,7 @@ import { useUserLocation } from "@/hooks/useUserLocation";
 import { useRoute } from "@/hooks/useRoute";
 import { getRouteBounds } from "@/lib/mockRoute";
 import { DestinationSearchBar } from "@/components/DestinationSearchBar";
+import { RouteInfoCard } from "@/components/RouteInfoCard";
 import type { GeocodingResult } from "@/lib/geocoding";
 import type { LngLat } from "@/lib/types";
 
@@ -119,8 +120,12 @@ export default function Index() {
       {/* Floating destination search (Mapbox Geocoding, client-side). */}
       <DestinationSearchBar proximity={origin} onSelect={handleSearchSelect} />
 
-      {/* Clear the chosen destination + route. */}
-      {destination ? (
+      {/* Item 4: route summary (distance / time / risk) with its own ✕. */}
+      {route ? <RouteInfoCard route={route} onClear={clearDestination} /> : null}
+
+      {/* Fallback clear button while there's a destination but no route yet
+          (loading or error) — the card isn't on screen to host the ✕. */}
+      {destination && !route ? (
         <Pressable style={styles.clearButton} onPress={clearDestination}>
           <Text style={styles.clearButtonText}>✕ Hedefi temizle</Text>
         </Pressable>

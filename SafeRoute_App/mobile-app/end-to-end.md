@@ -38,10 +38,15 @@
 > - **Görsel cila (arama çubuğu/pin/buton stilleri)** — Neden: Figma bekleniyor (Madde 9). Nasıl: `src/theme/` kurulunca stiller oradan beslenecek.
 > - **Cihazda prova** — arama→seçim→çizim akışı gerçek cihazda görsel olarak doğrulanacak (Madde 1'deki provayla birlikte).
 
-### 4. Rota bilgi kartı (mesafe / süre / risk skoru)
+### 4. Rota bilgi kartı (mesafe / süre / risk skoru) — ✅ TAMAMLANDI (mock veriyle)
 Rota çizilince alt kısımda `RouteInfoCard` göster: mesafe, tahmini süre, rota risk skoru (0–100).
 **Bitince:** rota bilgileri kullanıcıya görünür.
 > 🔗 **Bağımlılık — Seymen:** kartın gösterdiği `distance_m`, `duration_s`, `risk_score` alanları `POST /api/v1/route` yanıtından gelmeli (§A). Mock ile UI'ı önden bitiririm.
+> **✅ Yapıldı:** `src/components/RouteInfoCard.tsx` — alt kart: mesafe (m/km), yürüyüş süresi (dk), risk skoru + renkli etiket (0-33 yeşil "Düşük risk" / 34-66 turuncu "Orta" / 67-100 kırmızı "Yüksek") ve kart içinde ✕ (hedefi temizler). `index.tsx`: rota hazırken kart, rota yokken (loading/error) eski "✕ Hedefi temizle" butonu. `tsc` temiz.
+> **⏳ Sonraya ayrılan:**
+> - **Gerçek değerler** — Neden: mock sabit (1350m / ~17dk / risk 24). Nasıl: `USE_MOCK_ROUTE = false` olunca backend değerleri otomatik akar; kart koda dokunmadan çalışır.
+> - **Risk eşikleri (33/66)** — Neden: UI varsayımı, kontrat değil. Nasıl: Merve'nin skor dağılımına göre gerekirse `riskInfo()` eşikleri güncellenir.
+> - **Kart stili** — Figma (Madde 9).
 
 ### 5. Heatmap (risk ısı haritası) katmanı
 `getHeatmap()` çağrısı + risk noktalarını haritada göster: `HeatmapLayer` (ağırlık = `total_risk`) veya `CircleLayer` (renk = `total_risk`, yeşil→turuncu→kırmızı). Aç/kapa toggle butonu. Performans için tüm şehir yerine `GET /api/v1/heatmap/nearby` ile sadece yakındaki noktaları çekmeyi değerlendir.
