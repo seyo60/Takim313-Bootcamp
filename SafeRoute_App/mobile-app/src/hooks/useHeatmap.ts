@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getHeatmap } from "@/lib/api";
 import type { RiskPoint } from "@/lib/types";
 
@@ -7,38 +7,42 @@ export type HeatmapStatus = "loading" | "ready" | "error";
 export interface UseHeatmapResult {
   points: RiskPoint[];
   status: HeatmapStatus;
+  /** Reloads the risk points (e.g. after a danger report is submitted). */
+  refetch: () => void;
 }
 
 /**
- * Loads the risk points once on mount. The heatmap data doesn't depend on any
- * user input, so there's nothing to re-fetch reactively yet.
- *
- * TODO(osman): item 6 — after a danger report is submitted, re-fetch so the
- * new report shows up (expose a refetch() when we get there).
+ * Loads the risk points on mount; `refetch()` reloads them on demand.
+ * While a refetch is in flight the previous points stay on screen so the
+ * layer doesn't flicker.
  */
 export function useHeatmap(): UseHeatmapResult {
-  const [result, setResult] = useState<UseHeatmapResult>({
-    points: [],
-    status: "loading",
-  });
+  const [points, setPoints] = useState<RiskPoint[]>([]);
+  const [status, setStatus] = useState<HeatmapStatus>("loading");
+  // Bumping this re-runs the fetch effect.
+  const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setStatus("loading");
 
     (async () => {
-      const points = await getHeatmap();
+      const fresh = await getHeatmap();
       if (cancelled) return;
-      setResult(
-        points
-          ? { points, status: "ready" }
-          : { points: [], status: "error" }
-      );
+      if (fresh) {
+        setPoints(fresh);
+        setStatus("ready");
+      } else {
+        setStatus("error");
+      }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [nonce]);
 
-  return result;
+  const refetch = useCallback(() => setNonce((n) => n + 1), []);
+
+  return { points, status, refetch };
 }

@@ -1,5 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
 import Mapbox, {
   Camera,
   CircleLayer,
@@ -78,8 +79,26 @@ export default function Index() {
   const [destination, setDestination] = useState<LngLat | null>(null);
 
   // Item 5: risk heatmap data + visibility toggle.
-  const { points: riskPoints, status: heatmapStatus } = useHeatmap();
+  const {
+    points: riskPoints,
+    status: heatmapStatus,
+    refetch: refetchHeatmap,
+  } = useHeatmap();
   const [showHeatmap, setShowHeatmap] = useState(true);
+
+  // Item 6: refresh the heatmap when returning from the report modal, so a
+  // just-submitted report shows up. Skip the initial focus — the hook already
+  // fetches on mount.
+  const isFirstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (isFirstFocus.current) {
+        isFirstFocus.current = false;
+        return;
+      }
+      refetchHeatmap();
+    }, [refetchHeatmap])
+  );
 
   // Route origin: the user's real position when we have one, else the Chicago
   // demo center (backend graph only covers Chicago anyway).
@@ -184,6 +203,19 @@ export default function Index() {
         <Text style={styles.heatmapToggleText}>🔥</Text>
       </Pressable>
 
+      {/* Item 6: open the danger report modal (reports the user's location). */}
+      <Pressable
+        style={styles.reportButton}
+        onPress={() =>
+          router.push({
+            pathname: "/report",
+            params: { lng: String(origin[0]), lat: String(origin[1]) },
+          })
+        }
+      >
+        <Text style={styles.reportButtonText}>⚠️</Text>
+      </Pressable>
+
       {/* Item 4: route summary (distance / time / risk) with its own ✕. */}
       {route ? <RouteInfoCard route={route} onClear={clearDestination} /> : null}
 
@@ -234,6 +266,25 @@ const styles = StyleSheet.create({
     borderColor: "#E5484D",
   },
   heatmapToggleText: {
+    fontSize: 18,
+  },
+  reportButton: {
+    position: "absolute",
+    top: 176,
+    right: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#E5484D",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  reportButtonText: {
     fontSize: 18,
   },
   clearButton: {

@@ -60,11 +60,14 @@ Rota çizilince alt kısımda `RouteInfoCard` göster: mesafe, tahmini süre, ro
 > - **Rapor sonrası yenileme** — Neden: Madde 6'nın işi. Nasıl: `useHeatmap`'e `refetch()` eklenecek (TODO yorumu hook'ta).
 > - **Rampa/yarıçap ince ayarı** — gerçek veri dağılımı görülünce.
 
-### 6. Tehlike bildirim ekranı
+### 6. Tehlike bildirim ekranı — ✅ TAMAMLANDI (mock modda)
 `src/app/report.tsx` — serbest metin girişi + "Gönder". `POST /api/v1/report` çağrısı, "bildirimin alındı" onay mesajı. Not: analiz **arka planda LLM ile** yapılıyor, yani risk artışı anında dönmez → onay verip heatmap'i biraz sonra (veya kullanıcı yenileyince) tazelerim.
 **Bitince:** kullanıcı tehlike bildirimi yazıp gönderebiliyor, onay görüyor.
 > 🔗 **Bağımlılık — Seymen:** `POST /api/v1/report` endpoint'i lazım (§C).
 > 🔗 **Bağımlılık — Seda Nur:** NLP/LLM analiz mantığı onun/backend'in işi; ben sadece metni + koordinatı gönderir, dönen onayı gösteririm.
+> **✅ Yapıldı:** `src/app/report.tsx` (modal: çok satırlı metin, 280 karakter sayacı, min 5 karakter, gönderim/başarı/hata durumları, başarıda 1.2sn sonra haritaya dönüş) · haritada ⚠️ butonu (kullanıcı konumunu param olarak taşır) · `api.ts`'e `submitReport()` (`USE_MOCK_REPORT` anahtarı, gerçek POST yazılı; mock modda bildirilen yere lokal 90-risk noktası eker → demo'da "bildir → haritada leke çıkar" akışı çalışır) · `useHeatmap`'e `refetch()` + harita ekranına dönünce otomatik tazeleme · `hour` parametresi de artık gerçek `getRoute` body'sinde. `tsc` temiz.
+> **📝 Sonradan düzeltme notu (kod hazır, anahtar/ince ayar):** `USE_MOCK_REPORT = false` yapınca gerçek endpoint'e geçer; §C body alan adları farklıysa `types.ts` güncellenir. Mock'un "haritaya anında leke ekleme" davranışı gerçekte YOK (analiz arka planda) — gerçek modda otomatik olarak devre dışı kalır, ekstra iş gerekmez.
+> **⏳ Gerçekten sonraya:** yanıt senkron analiz de içerirse sonucu ekranda göstermek (§C netleşince).
 
 ### 7. Yükleme & hata UX'i
 Rota / heatmap / rapor çağrıları için spinner ve görünür hata banner'ları (mevcut `logRequestError` mantığının üstüne kullanıcıya görünen UI). Backend down iken app çökmemeli.

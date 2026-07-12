@@ -45,6 +45,23 @@ export const MOCK_RISK_POINTS: RiskPoint[] = [
 ];
 
 /**
+ * Danger reports submitted while in mock mode. The real backend does this
+ * server-side (report → LLM analysis → risk table); locally we mimic the end
+ * result so the demo flow "report → heatmap shows a new hot spot" works.
+ */
+const reportedPoints: RiskPoint[] = [];
+
+/** Registers a mock high-risk point at the reported location. */
+export function addMockReportedPoint(lng: number, lat: number): void {
+  reportedPoints.push({ lng, lat, total_risk: 90 });
+}
+
+/** All mock risk points: the static clusters + any reported this session. */
+export function getMockRiskPoints(): RiskPoint[] {
+  return [...MOCK_RISK_POINTS, ...reportedPoints];
+}
+
+/**
  * Converts risk points into the GeoJSON FeatureCollection Mapbox's
  * ShapeSource expects. Works for both mock and (later) real backend points.
  */

@@ -1,7 +1,14 @@
 import axios, { AxiosError } from "axios";
-import type { LngLat, RiskPoint, RouteRequest, RouteResponse } from "./types";
+import type {
+  LngLat,
+  ReportRequest,
+  ReportResponse,
+  RiskPoint,
+  RouteRequest,
+  RouteResponse,
+} from "./types";
 import { buildMockRouteResponse } from "./mockRoute";
-import { MOCK_RISK_POINTS } from "./mockHeatmap";
+import { addMockReportedPoint, getMockRiskPoints } from "./mockHeatmap";
 
 /**
  * While the backend endpoints are not live yet, API calls below return local
@@ -14,6 +21,9 @@ const USE_MOCK_ROUTE = true;
 
 /** TODO(osman): set to false when GET /api/v1/heatmap is live (§B). */
 const USE_MOCK_HEATMAP = true;
+
+/** TODO(osman): set to false when POST /api/v1/report is live (§C). */
+const USE_MOCK_REPORT = true;
 
 /**
  * Backend base URL. Set EXPO_PUBLIC_API_BASE_URL in .env to your teammate's
@@ -96,8 +106,10 @@ export async function getRoute(
 
   try {
     // TODO(osman): body field names pending §A (start/end arrays vs
-    // start_lat/start_lng). Also decide who sends `hour`.
-    const body: RouteRequest = { start, end };
+    // start_lat/start_lng) — adjust here + types.ts if Seymen picks otherwise.
+    // We send the device's local hour so risk matches the time of day; drop it
+    // if the backend decides to derive the hour server-side.
+    const body: RouteRequest = { start, end, hour: new Date().getHours() };
     const response = await api.post<RouteResponse>("/api/v1/route", body);
     return response.data;
   } catch (error) {
@@ -120,7 +132,7 @@ export async function getRoute(
 export async function getHeatmap(): Promise<RiskPoint[] | null> {
   if (USE_MOCK_HEATMAP) {
     await new Promise((resolve) => setTimeout(resolve, 300));
-    return MOCK_RISK_POINTS;
+    return getMockRiskPoints();
   }
 
   try {
@@ -128,6 +140,37 @@ export async function getHeatmap(): Promise<RiskPoint[] | null> {
     return response.data;
   } catch (error) {
     logRequestError("getHeatmap (GET /api/v1/heatmap)", error);
+    return null;
+  }
+}
+
+/**
+ * Submits a danger report (POST /api/v1/report). The backend acknowledges and
+ * analyzes the text in the background (LLM) — no risk score in the response.
+ * Returns null on failure — never throws.
+ *
+ * In mock mode also plants a local high-risk point at the reported location,
+ * mimicking what the backend pipeline will eventually do, so the
+ * "report → new hot spot on the heatmap" flow is demoable today.
+ *
+ * TODO(osman): §C pending — confirm body field names and that the response is
+ * acknowledgement-only; if analysis comes back synchronously, surface it in
+ * the report screen.
+ */
+export async function submitReport(
+  report: ReportRequest
+): Promise<ReportResponse | null> {
+  if (USE_MOCK_REPORT) {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    addMockReportedPoint(report.lng, report.lat);
+    return { ok: true, id: `mock-${Date.now()}` };
+  }
+
+  try {
+    const response = await api.post<ReportResponse>("/api/v1/report", report);
+    return response.data;
+  } catch (error) {
+    logRequestError("submitReport (POST /api/v1/report)", error);
     return null;
   }
 }
