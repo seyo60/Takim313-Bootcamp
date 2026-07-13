@@ -1,0 +1,52 @@
+[
+  {
+    "h3_index": "8928308280fffff",
+    "lat": 41.8781,
+    "lng": -87.6298,
+    "risk_historical": 72.5,
+    "risk_live": 15.0,
+    "risk_social": 8.0,
+    "total_risk": 41.7,
+    "location_description": "Loop - State Street & Madison"
+  },
+  {
+    "h3_index": "8928308282fffff",
+    "lat": 41.8819,
+    "lng": -87.6278,
+    "risk_historical": 45.0,
+    "risk_live": 55.0,
+    "risk_social": 20.0,
+    "total_risk": 47.5,
+    "location_description": "River North - Wells Street"
+  },
+  {
+    "h3_index": "8928308284fffff",
+    "lat": 41.8697,
+    "lng": -87.6610,
+    "risk_historical": 88.0,
+    "risk_live": 30.0,
+    "risk_social": 5.0,
+    "total_risk": 52.7,
+    "location_description": "University Village - Halsted Street"
+  },
+  {
+    "h3_index": "8928308286fffff",
+    "lat": 41.9214,
+    "lng": -87.6513,
+    "risk_historical": 25.0,
+    "risk_live": 5.0,
+    "risk_social": 2.0,
+    "total_risk": 12.7,
+    "location_description": "Lincoln Park - Clark Street"
+  },
+  {
+    "h3_index": "8928308288fffff",
+    "lat": 41.8500,
+    "lng": -87.6500,
+    "risk_historical": 95.0,
+    "risk_live": 80.0,
+    "risk_social": 40.0,
+    "total_risk": 82.0,
+    "location_description": "Englewood - 63rd Street"
+  }
+]
