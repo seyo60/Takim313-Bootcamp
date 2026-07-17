@@ -5,10 +5,10 @@ Görev 1: Sokakların neden güvensiz olduğunu kısa bir metinle açıklar.
 Şimdilik: mock JSON'dan StreetRiskData alır.
 Sonra:    h3_heatmap tablosundan veri çekilir (repository katmanı eklenecek).
 """
-from schemas.types import StreetRiskData, StreetExplanation
-from services.llm_client import generate_text
-from config import settings
-from prompts.guardrails import (
+from ..schemas.types import StreetRiskData, StreetExplanation
+from .llm_client import generate_text
+from config import settings  # backend/config.py (tek Settings kaynagi)
+from ..prompts.guardrails import (
     STREET_EXPLAINER_PROMPT,
     STREET_EXPLAINER_PROMPT_COMPACT,
     validate_llm_output,

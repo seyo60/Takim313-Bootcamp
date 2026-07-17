@@ -7,7 +7,7 @@ Backend'deki llm_service.py'ye DOKUNULMAZ — bu tamamen ayrı bir modüldür.
 import asyncio
 import json
 import re
-from config import settings
+from config import settings  # backend/config.py (tek Settings kaynagi)
 
 
 async def generate_text(prompt: str, system_prompt: str = "") -> str:
@@ -183,25 +183,37 @@ async def _call_openai(prompt: str, system_prompt: str) -> str:
 
 async def _call_gemini(prompt: str, system_prompt: str) -> str:
     try:
-        import google.generativeai as genai
+        from google import genai
+        from google.genai import types as genai_types
     except ImportError:
-        raise ImportError("google-generativeai paketi yüklü değil: pip install google-generativeai")
+        raise ImportError("google-genai paketi yüklü değil: pip install google-genai")
 
     if not settings.gemini_api_key:
         raise ValueError("GEMINI_API_KEY .env dosyasında tanımlı değil")
 
-    genai.configure(api_key=settings.gemini_api_key)
-    model = genai.GenerativeModel(settings.gemini_model)
+    client = genai.Client(api_key=settings.gemini_api_key)
 
     full_prompt = (
         f"{system_prompt}\n\n{prompt}\n\n"
         "ONEMLI: Yanitin SADECE gecerli JSON olsun. Markdown veya aciklama ekleme."
     )
 
+    def _generate():
+        response = client.models.generate_content(
+            model=settings.gemini_model,
+            contents=full_prompt,
+            config=genai_types.GenerateContentConfig(
+                temperature=settings.llm_temperature,
+                max_output_tokens=settings.llm_max_tokens,
+                response_mime_type="application/json",
+            ),
+        )
+        return response
+
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            response = await asyncio.to_thread(model.generate_content, full_prompt)
+            response = await asyncio.to_thread(_generate)
             text = _extract_gemini_text(response)
             if not text:
                 raise ValueError("Gemini bos cevap dondurdu")
@@ -218,7 +230,7 @@ async def _call_gemini(prompt: str, system_prompt: str) -> str:
                 continue
             if is_daily_quota:
                 raise RuntimeError(
-                    "Gemini gunluk ucretsiz kota doldu (20 istek/gun). "
+                    "Gemini gunluk ucretsiz kota doldu. "
                     "Yarin tekrar deneyin veya .env dosyasinda LLM_MODE=mock yapin."
                 ) from e
             raise

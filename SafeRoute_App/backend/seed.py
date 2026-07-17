@@ -16,14 +16,12 @@ from shapely.geometry import Point
 
 from config import settings
 from models import H3HeatmapModel
+# Agirliklar TEK yerden (crud.py) import edilir - kopya sabit tutulmaz.
+# 2 kanalli yapi: HISTORICAL_WEIGHT=0.5, LIVE_WEIGHT=0.5, SOCIAL_WEIGHT=0.0
+from crud import HISTORICAL_WEIGHT, LIVE_WEIGHT, SOCIAL_WEIGHT  # noqa: F401
 
 engine = create_async_engine(settings.database_url, echo=False)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-# Toplama formulu ile AYNI agirliklar - crud.py'deki formulle tutarli olmali
-HISTORICAL_WEIGHT = 0.4
-LIVE_WEIGHT = 0.5
-SOCIAL_WEIGHT = 0.1
 
 
 async def seed_data():

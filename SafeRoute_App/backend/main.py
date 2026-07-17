@@ -1,5 +1,18 @@
 # backend/main.py
-from fastapi import FastAPI, Depends, HTTPException, Query, status, Request, BackgroundTasks, Header
+"""
+SafeRoute FastAPI backend - mobil (end-to-end.md) kontratlariyla birebir uyumlu.
+
+KONTRAT OZETI (BACKEND_IMPLEMENTATION_MASTER_PLAN.md Bolum 2):
+  POST /api/v1/route   : { start: [lng,lat], end: [lng,lat], hour? }
+                         -> { route, distance_m, duration_s, risk_score, shortest }
+  GET  /api/v1/heatmap : -> [ { lat, lng, total_risk }, ... ]  (flat array)
+  POST /api/v1/report  : { text, lat, lng } -> { ok: true, id: "..." }
+
+KAPSAM DISI: /api/v1/webhook/social-risk ucu ve n8n/sosyal medya entegrasyonu
+MVP kapsamindan cikarildi; webhook secret'i config'den tamamen kaldirildi.
+(Faz 2'de gerekirse git gecmisinden geri alinabilir.)
+"""
+from fastapi import FastAPI, Depends, HTTPException, Query, status, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -15,8 +28,8 @@ from llm_service import analyze_report_risk_with_llm
 engine = create_async_engine(settings.database_url, echo=False)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-# Graf dosyasının yolu - Chicago grafı
-GRAPH_PATH = "../data-science/chicago.graphml"
+# Graf dosyasinin yolu (.env: GRAPH_PATH) - Chicago grafi
+GRAPH_PATH = settings.graph_path
 
 
 async def get_db():
@@ -24,24 +37,11 @@ async def get_db():
         yield session
 
 
-async def verify_webhook_secret(x_webhook_secret: str = Header(...)):
-    """
-    n8n gibi dis otomasyon araclarinin webhook'a erisebilmesi icin basit
-    bir paylasilan-anahtar kontrolu. .env icindeki WEBHOOK_SECRET ile
-    ayni deger 'X-Webhook-Secret' header'inda gonderilmezse istek reddedilir.
-
-    NOT: Bu, production icin minimum seviye bir koruma. Ileride HMAC imza
-    dogrulamasi gibi daha guclu bir yonteme gecmek gerekebilir.
-    """
-    if x_webhook_secret != settings.webhook_secret:
-        raise HTTPException(status_code=403, detail="Gecersiz webhook anahtari")
-
-
 async def process_report_background_task(app_state, latitude: float, longitude: float, text: str):
     """
     Arka planda calisan orkestrator:
     1. Ihbarin H3 hucresini bulur.
-    2. LLM'e metni sorup dinamik risk cezasini alir.
+    2. LLM'e (veya kural tabanli fallback'e) metni sorup dinamik risk cezasini alir.
     3. Veritabanini gunceller ve AGIRLIKLI FORMULLE hesaplanmis NIHAI
        total_risk degerini geri alir (crud.py - tek dogruluk kaynagi).
     4. RAM'deki grafi bu NIHAI degerle gunceller (ekleme degil, dogrudan yazma) -
@@ -50,7 +50,7 @@ async def process_report_background_task(app_state, latitude: float, longitude: 
     try:
         report_h3_cell = h3.latlng_to_cell(latitude, longitude, routing.H3_RESOLUTION)
 
-        dynamic_risk_penalty = await analyze_report_risk_with_llm(text)
+        dynamic_risk_penalty = await analyze_report_risk_with_llm(text, latitude, longitude)
         print(f"\n[Arka Plan] İhbar: '{text}' -> Üretilen Ceza Puanı: {dynamic_risk_penalty}")
 
         # Once DB'yi guncelle, agirlikli formulle hesaplanmis NIHAI degeri al
@@ -71,36 +71,11 @@ async def process_report_background_task(app_state, latitude: float, longitude: 
         print(f"\n[Arka Plan Hatası] İşlem sırasında hata oluştu: {e}\n")
 
 
-async def process_webhook_background_task(app_state, latitude: float, longitude: float, risk_score: float, source: str):
-    """
-    Webhook'tan gelen veriyi isler. LLM'e gitmez, skor zaten disaridan hesaplanmis gelir.
-    Ayni RAM/DB tutarlilik prensibi burada da uygulanir.
-    """
-    try:
-        report_h3_cell = h3.latlng_to_cell(latitude, longitude, routing.H3_RESOLUTION)
-
-        async with AsyncSessionLocal() as session:
-            new_total_risk = await crud.update_h3_social_risk(session, report_h3_cell, risk_score)
-            print(f"[Webhook Arka Plan] {source} kaynaklı risk işlendi (yeni total_risk={new_total_risk:.2f})")
-
-        routing.set_absolute_risk_for_h3(
-            app_state.graph,
-            app_state.h3_to_edges,
-            report_h3_cell,
-            new_total_risk
-        )
-        print(f"[Webhook Arka Plan] {report_h3_cell} hücresi için RAM grafı güncellendi.\n")
-
-    except Exception as e:
-        print(f"\n[Webhook Arka Plan Hatası]: {e}\n")
-
-
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    # NOT: Tablo olusturma/guncelleme artik burada YAPILMIYOR.
-    # Sema yonetimi tamamen Alembic'in sorumlulugunda:
+    # NOT: Sema yonetimi tamamen Alembic'in sorumlulugunda:
     #   alembic upgrade head
-    # komutu uygulama baslamadan ONCE calistirilmis olmali.
+    # Docker ortaminda bu komut entrypoint.sh icinde otomatik calisir.
 
     print(f"Graf yükleniyor: {GRAPH_PATH} (Lütfen bekleyin...)")
     app.state.graph = routing.load_graph(GRAPH_PATH)
@@ -111,7 +86,7 @@ async def lifespan(app: FastAPI):
         risk_lookup = routing.build_risk_lookup(heatmap_points)
         app.state.h3_to_edges = routing.apply_risk_weights(app.state.graph, risk_lookup)
 
-    print("Sistem hazır. Rota istekleri kabul ediliyor.")
+    print(f"Sistem hazır. LLM_MODE={settings.llm_mode}, LLM_PROVIDER={settings.llm_provider}. Rota istekleri kabul ediliyor.")
     yield
 
 
@@ -126,60 +101,58 @@ app.add_middleware(
 )
 
 
-# --- PYDANTIC MODELLERİ ---
+# --- PYDANTIC MODELLERİ (Mobil kontratla birebir) ---
 class RouteRequest(BaseModel):
-    start_lat: float = Field(ge=-90, le=90, description="Başlangıç noktası enlem")
-    start_lng: float = Field(ge=-180, le=180, description="Başlangıç noktası boylam")
-    end_lat: float = Field(ge=-90, le=90, description="Bitiş noktası enlem")
-    end_lng: float = Field(ge=-180, le=180, description="Bitiş noktası boylam")
+    """Mobil, koordinatlari Mapbox standardinda [lng, lat] dizisi olarak yollar."""
+    start: list[float] = Field(..., min_length=2, max_length=2, description="[lng, lat] formatında başlangıç koordinatı")
+    end: list[float] = Field(..., min_length=2, max_length=2, description="[lng, lat] formatında bitiş koordinatı")
+    hour: int | None = Field(default=None, ge=0, le=23, description="İsteğe bağlı yerel saat (0-23). MVP'de kabul edilir, risk hesabına Faz 2'de katılacak.")
 
 
-class GeoJSONGeometry(BaseModel):
+class LineString(BaseModel):
+    """GeoJSON LineString - mobil dogrudan bu yapiyi bekler (Feature wrapper YOK)."""
     type: str = "LineString"
     coordinates: list[list[float]]
 
 
-class GeoJSONFeature(BaseModel):
-    type: str = "Feature"
-    properties: dict = {}
-    geometry: GeoJSONGeometry
-
-
 class RouteResponse(BaseModel):
-    status: str
-    distance_meters: float
-    safety_score: float
-    geojson: GeoJSONFeature
+    route: LineString = Field(..., description="Güvenli rota (GeoJSON LineString, [lng, lat] çiftleri)")
+    distance_m: float
+    duration_s: float
+    risk_score: float = Field(..., description="0 (güvenli) - 100 (tehlikeli)")
+    shortest: LineString | None = Field(default=None, description="Kıyaslama için standart en kısa rota")
 
 
 class HeatmapPoint(BaseModel):
     lat: float
     lng: float
-    weight: float
-    h3_index: str
-
-
-class HeatmapResponse(BaseModel):
-    points: list[HeatmapPoint]
+    total_risk: float
 
 
 class ReportCreate(BaseModel):
-    latitude: float = Field(..., ge=-90, le=90)
-    longitude: float = Field(..., ge=-180, le=180)
+    """Mobil kontrat: { text, lat, lng }"""
     text: str = Field(..., min_length=1)
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
 
 
 class ReportResponse(BaseModel):
-    status: str
-    message: str
+    ok: bool
+    id: str | None = None
 
 
-class WebhookSocialRisk(BaseModel):
-    latitude: float = Field(..., ge=-90, le=90)
-    longitude: float = Field(..., ge=-180, le=180)
-    risk_score: float = Field(..., ge=0, le=100, description="LLM tarafından dışarıda hesaplanmış skor")
-    source: str = Field(default="social_media", description="Örn: twitter, blog, haber")
-    text_snippet: str = Field(default="", description="Loglama için yakalanan metin")
+def _ensure_within_chicago(lat: float, lng: float, label: str) -> None:
+    """Chicago sinirlari disindaki koordinatlar icin aciklayici HTTP 400 firlatir."""
+    if not routing.is_within_chicago(lat, lng):
+        b = routing.CHICAGO_BOUNDS
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"{label} koordinatı ({lat:.4f}, {lng:.4f}) servis alanı dışında. "
+                f"SafeRoute şu anda yalnızca Chicago sınırları içinde hizmet vermektedir "
+                f"(enlem {b['min_lat']}–{b['max_lat']}, boylam {b['min_lng']}–{b['max_lng']})."
+            ),
+        )
 
 
 # --- API ENDPOINT'LERİ ---
@@ -188,17 +161,40 @@ def read_root():
     return {"message": "Safe Route App Backend Çalışıyor!"}
 
 
-@app.post("/api/v1/route", response_model=RouteResponse)
+@app.get("/health")
+def health_check():
+    """Render/Railway health check ucu."""
+    return {"status": "ok"}
+
+
+@app.post("/api/v1/route", response_model=RouteResponse, response_model_exclude_none=True)
 async def get_route(payload: RouteRequest, request: Request):
     graph = request.app.state.graph
 
+    # [lng, lat] dizilerini ayristir (Mapbox/GeoJSON koordinat sirasi)
+    start_lng, start_lat = payload.start[0], payload.start[1]
+    end_lng, end_lat = payload.end[0], payload.end[1]
+
+    # Cografi sinir kontrolu: Chicago disi -> HTTP 400
+    _ensure_within_chicago(start_lat, start_lng, "Başlangıç")
+    _ensure_within_chicago(end_lat, end_lng, "Bitiş")
+
     try:
-        coordinates, distance_meters, safety_score = routing.compute_safe_route(
+        # 1) Guvenli rota (risk agirlikli)
+        safe_coords, distance_m, safety_score = routing.compute_safe_route(
             graph,
-            start_lat=payload.start_lat,
-            start_lng=payload.start_lng,
-            end_lat=payload.end_lat,
-            end_lng=payload.end_lng,
+            start_lat=start_lat,
+            start_lng=start_lng,
+            end_lat=end_lat,
+            end_lng=end_lng,
+        )
+        # 2) Kiyaslama icin standart en kisa rota (sadece "length" agirligi)
+        shortest_coords, _shortest_distance = routing.compute_shortest_route(
+            graph,
+            start_lat=start_lat,
+            start_lng=start_lng,
+            end_lat=end_lat,
+            end_lng=end_lng,
         )
     except Exception as e:
         raise HTTPException(
@@ -206,14 +202,16 @@ async def get_route(payload: RouteRequest, request: Request):
             detail=f"Rota hesaplanamadı. Koordinatlar graf sınırları içinde mi kontrol edin: {str(e)}"
         )
 
-    geometry = GeoJSONGeometry(coordinates=coordinates)
-    feature = GeoJSONFeature(geometry=geometry)
+    # Yurume suresi: ortalama 1.2 m/s
+    duration_s = distance_m / routing.WALKING_SPEED_MPS
 
     return RouteResponse(
-        status="success",
-        distance_meters=distance_meters,
-        safety_score=safety_score,
-        geojson=feature,
+        route=LineString(coordinates=safe_coords),
+        distance_m=round(distance_m, 1),
+        duration_s=round(duration_s, 1),
+        # Mobil 0=guvenli, 100=tehlikeli bekler; safety_score (100=guvenli) ters cevrilir.
+        risk_score=round(100.0 - safety_score, 1),
+        shortest=LineString(coordinates=shortest_coords),
     )
 
 
@@ -224,58 +222,38 @@ async def add_live_report(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
+    # Chicago disi ihbarlar da reddedilir (suni risk bolgesi olusmasin)
+    _ensure_within_chicago(payload.lat, payload.lng, "İhbar")
+
     try:
-        await crud.create_report(db, payload.latitude, payload.longitude, payload.text)
+        report = await crud.create_report(db, payload.lat, payload.lng, payload.text)
 
         background_tasks.add_task(
             process_report_background_task,
             app_state=request.app.state,
-            latitude=payload.latitude,
-            longitude=payload.longitude,
+            latitude=payload.lat,
+            longitude=payload.lng,
             text=payload.text
         )
 
-        return ReportResponse(status="success", message="Bildiriminiz ulaştı. Yapay zeka durumu analiz ediyor.")
+        return ReportResponse(ok=True, id=str(report.id))
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Bildirim kaydedilemedi: {str(e)}")
 
 
-@app.post(
-    "/api/v1/webhook/social-risk",
-    response_model=ReportResponse,
-    status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_webhook_secret)],  # <-- Guvenlik kontrolu eklendi
-)
-async def receive_social_risk_webhook(
-    payload: WebhookSocialRisk,
-    request: Request,
-    background_tasks: BackgroundTasks
-):
-    """
-    Dış otomasyon araçlarının (n8n vb.) sosyal medyada tehlike tespit ettiğinde
-    veriyi fırlatacağı kapı. Erişim için 'X-Webhook-Secret' header'ı zorunludur.
-    """
-    try:
-        background_tasks.add_task(
-            process_webhook_background_task,
-            app_state=request.app.state,
-            latitude=payload.latitude,
-            longitude=payload.longitude,
-            risk_score=payload.risk_score,
-            source=payload.source
-        )
-        return ReportResponse(status="success", message="Sosyal medya risk verisi arka planda işleniyor.")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Webhook işlenemedi: {str(e)}")
-
-
-@app.get("/api/v1/heatmap", response_model=HeatmapResponse)
+@app.get("/api/v1/heatmap", response_model=list[HeatmapPoint])
 async def get_heatmap(db: AsyncSession = Depends(get_db)):
+    """Mobil kontrat: wrapper object DEGIL, dogrudan flat array doner."""
     points = await crud.get_all_heatmap_points(db)
-    return HeatmapResponse(points=[HeatmapPoint(lat=p.lat, lng=p.lng, weight=p.total_risk, h3_index=p.h3_index) for p in points])
+    return [HeatmapPoint(lat=p.lat, lng=p.lng, total_risk=p.total_risk) for p in points]
 
 
-@app.get("/api/v1/heatmap/nearby", response_model=HeatmapResponse)
-async def get_nearby_heatmap(lat: float = Query(..., ge=-90, le=90), lng: float = Query(..., ge=-180, le=180), radius: int = Query(500, ge=1), db: AsyncSession = Depends(get_db)):
+@app.get("/api/v1/heatmap/nearby", response_model=list[HeatmapPoint])
+async def get_nearby_heatmap(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    radius: int = Query(500, ge=1),
+    db: AsyncSession = Depends(get_db)
+):
     points = await crud.get_nearby_risk_points(db, lat, lng, radius)
-    return HeatmapResponse(points=[HeatmapPoint(lat=p.lat, lng=p.lng, weight=p.total_risk, h3_index=p.h3_index) for p in points])
+    return [HeatmapPoint(lat=p.lat, lng=p.lng, total_risk=p.total_risk) for p in points]

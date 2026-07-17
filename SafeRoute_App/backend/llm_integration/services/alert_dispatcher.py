@@ -11,8 +11,8 @@ import uuid
 from pathlib import Path
 from datetime import datetime
 
-from config import settings
-from schemas.types import NearbyUser, AlertMessage, ReportAnalysisResult
+from config import settings  # backend/config.py (tek Settings kaynagi)
+from ..schemas.types import NearbyUser, AlertMessage, ReportAnalysisResult
 
 
 def _haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:

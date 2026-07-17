@@ -18,6 +18,26 @@ H3_RESOLUTION = 9
 # Risk agirliginin mesafeye ne kadar etki edecegini kontrol eden katsayi.
 RISK_WEIGHT_FACTOR = 10.0
 
+# Ortalama yuruyus hizi (m/s) - duration_s hesabinda kullanilir.
+WALKING_SPEED_MPS = 1.2
+
+# Chicago sehir sinirlari icin yaklasik bounding box.
+# Bu kutunun disindan gelen rota/ihbar istekleri HTTP 400 ile reddedilir.
+CHICAGO_BOUNDS = {
+    "min_lat": 41.62,
+    "max_lat": 42.05,
+    "min_lng": -87.95,
+    "max_lng": -87.50,
+}
+
+
+def is_within_chicago(lat: float, lng: float) -> bool:
+    """Koordinat Chicago bounding box'i icinde mi?"""
+    return (
+        CHICAGO_BOUNDS["min_lat"] <= lat <= CHICAGO_BOUNDS["max_lat"]
+        and CHICAGO_BOUNDS["min_lng"] <= lng <= CHICAGO_BOUNDS["max_lng"]
+    )
+
 _graph_cache = None
 
 
@@ -126,3 +146,29 @@ def compute_safe_route(graph, start_lat: float, start_lng: float, end_lat: float
     safety_score = max(0.0, min(100.0, 100.0 - avg_risk * 10))
 
     return coordinates, total_distance, safety_score
+
+
+def compute_shortest_route(graph, start_lat: float, start_lng: float, end_lat: float, end_lng: float):
+    """
+    Rota kiyaslama ekrani icin STANDART en kisa yolu hesaplar.
+    Risk agirligi KULLANILMAZ - sadece fiziksel yol uzunlugu ("length").
+
+    Returns:
+        (coordinates, total_distance) - [[lng, lat], ...] ve metre cinsinden mesafe
+    """
+    start_node = ox.nearest_nodes(graph, X=start_lng, Y=start_lat)
+    end_node = ox.nearest_nodes(graph, X=end_lng, Y=end_lat)
+
+    route_nodes = nx.shortest_path(
+        graph, source=start_node, target=end_node, weight="length"
+    )
+
+    coordinates = [[graph.nodes[n]["x"], graph.nodes[n]["y"]] for n in route_nodes]
+
+    total_distance = 0.0
+    for i in range(len(route_nodes) - 1):
+        edge_data_options = graph.get_edge_data(route_nodes[i], route_nodes[i + 1])
+        edge = min(edge_data_options.values(), key=lambda d: d.get("length", 0))
+        total_distance += edge.get("length", 0)
+
+    return coordinates, total_distance

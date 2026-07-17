@@ -7,10 +7,10 @@ Metinden risk skoru, kategori ve kısa özet üretir.
 Sonra:    reports tablosuna yazılır (repository katmanı eklenecek).
 """
 import h3
-from schemas.types import UserReport, ReportAnalysisResult
-from services.llm_client import generate_text
-from config import settings
-from prompts.guardrails import (
+from ..schemas.types import UserReport, ReportAnalysisResult
+from .llm_client import generate_text
+from config import settings  # backend/config.py (tek Settings kaynagi)
+from ..prompts.guardrails import (
     REPORT_ANALYZER_PROMPT,
     REPORT_ANALYZER_PROMPT_COMPACT,
     validate_llm_output,

@@ -9,10 +9,12 @@ from datetime import datetime
 from models import H3HeatmapModel, ReportModel
 
 # --- TEK DOGRULUK KAYNAGI: Agirlikli toplama formulu ---
-# Bu katsayilar seed.py'deki katsayilarla AYNI olmali.
-HISTORICAL_WEIGHT = 0.4
-LIVE_WEIGHT = 0.5
-SOCIAL_WEIGHT = 0.1
+# 2 KANALLI YAPI (MVP karari): Sosyal medya kanali kapsam disi birakildi.
+# risk_social kolonu semada duruyor (Faz 2 icin) ama katsayisi 0.0 oldugu
+# icin hesaba katilmiyor. seed.py bu sabitleri BURADAN import eder.
+HISTORICAL_WEIGHT = 0.5  # %50 gecmis istatistiksel risk (Chicago Data Portal)
+LIVE_WEIGHT = 0.5        # %50 canli kullanici ihbari
+SOCIAL_WEIGHT = 0.0      # Devre disi (sosyal medya / n8n kapsam disi)
 
 
 def _compute_total_risk(historical: float, live: float, social: float) -> float:
