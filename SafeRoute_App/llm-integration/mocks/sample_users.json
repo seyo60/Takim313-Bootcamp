@@ -1,0 +1,38 @@
+[
+  {
+    "user_id": "user_001",
+    "device_token": "mock_token_abc123",
+    "latitude": 41.8785,
+    "longitude": -87.6300
+  },
+  {
+    "user_id": "user_002",
+    "device_token": "mock_token_def456",
+    "latitude": 41.8778,
+    "longitude": -87.6295
+  },
+  {
+    "user_id": "user_003",
+    "device_token": "mock_token_ghi789",
+    "latitude": 41.8790,
+    "longitude": -87.6310
+  },
+  {
+    "user_id": "user_004",
+    "device_token": null,
+    "latitude": 41.8820,
+    "longitude": -87.6280
+  },
+  {
+    "user_id": "user_005",
+    "device_token": "mock_token_jkl012",
+    "latitude": 41.8505,
+    "longitude": -87.6505
+  },
+  {
+    "user_id": "user_006",
+    "device_token": "mock_token_mno345",
+    "latitude": 41.9210,
+    "longitude": -87.6510
+  }
+]
