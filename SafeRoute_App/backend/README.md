@@ -1,6 +1,6 @@
 # Safe Route App - Backend
 
-> Kapsamlı deploy talimatları (Docker Compose, Railway + Supabase adımları)
+> Kapsamlı deploy talimatları (Docker Compose, Render + Supabase adımları)
 > için: **[DEPLOYMENT.md](./DEPLOYMENT.md)**. Bu dosya sadece lokal geliştirme
 > kurulumunu ve API/mimari referansını anlatır.
 
