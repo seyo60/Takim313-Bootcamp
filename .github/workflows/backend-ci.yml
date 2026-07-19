@@ -1,0 +1,86 @@
+name: Backend CI
+
+# Backend'i test eder, main'de (testler geçtikten sonra) Render.com'a deploy eder.
+# Deploy, korumalı "production" environment'ı üzerinden manuel onay bekler.
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "SafeRoute_App/backend/**"
+      - "SafeRoute_App/data-science/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "SafeRoute_App/backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+defaults:
+  run:
+    working-directory: SafeRoute_App/backend
+
+jobs:
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Runtime, Docker imajıyla aynı sürümde tutulur (backend/Dockerfile -> 3.12).
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: SafeRoute_App/backend/requirements.txt
+
+      # shapely / osmnx (rtree) için sistem kütüphaneleri.
+      - name: Install system libraries
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgeos-dev libspatialindex-dev
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff pytest httpx
+
+      # Sadece gerçek hataları (sözdizimi, tanımsız isim) bloke eder; stil
+      # ihlalleri mevcut kodu kırmasın diye bilgilendirme amaçlı ayrı koşulur.
+      - name: Lint (ruff — errors only, blocking)
+        run: ruff check --output-format=github --select=E9,F63,F7,F82 .
+
+      - name: Lint (ruff — full, non-blocking)
+        run: ruff check . || true
+
+      # Test paketi DB'yi ve grafı stub'lar; import anında settings'in bir
+      # DATABASE_URL değeri olması yeter (gerçek bağlantı kurulmaz), LLM mock.
+      - name: Run tests (pytest)
+        env:
+          DATABASE_URL: postgresql+asyncpg://ci:ci@localhost:5432/ci
+          LLM_MODE: mock
+        run: python -m pytest tests/ -v
+
+  deploy:
+    name: Deploy to Render (manual approval)
+    needs: test
+    # Yalnızca main'e push'ta ve testler geçince. Onay: aşağıdaki environment.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # Bu environment'a GitHub Settings > Environments'tan "required reviewers"
+    # eklenince deploy, biri onaylayana kadar bekler (RLS/CORS gözden geçirme kapısı).
+    environment:
+      name: production
+    steps:
+      - name: Pre-deploy reminder — RLS & CORS
+        run: |
+          echo "::warning title=PROD ÖNCESİ KONTROL::Supabase RLS açık mı? Backend CORS allow_origins hâlâ [\"*\"] — prod için kısıtlandı mı? Onaylamadan önce gözden geçir."
+
+      - name: Trigger Render deploy hook
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK_URL secret'ı tanımlı değil."
+            exit 1
+          fi
+          curl -fsSL -X POST "$RENDER_DEPLOY_HOOK_URL"
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}

@@ -36,6 +36,51 @@ Kentsel alanlarda yalnız seyahat eden bireylerin, kadınların ve öğrencileri
 
 ---
 
+# CI/CD
+
+Proje, GitHub Actions ile iki bağımsız pipeline kullanır. Workflow dosyaları
+`.github/workflows/` altındadır ve yalnızca ilgili klasör değiştiğinde (path
+filtreleri) tetiklenir.
+
+## Pipeline'lar
+
+| Workflow | Tetikleyici | Ne yapar |
+|---|---|---|
+| **`backend-ci.yml`** | `SafeRoute_App/backend/**` veya `data-science/**` → `push`/`PR` (main, develop) | Python 3.12 kurar (pip cache), sistem kütüphanelerini (geos/spatialindex) yükler, `pip install -r requirements.txt`, **ruff** lint, **pytest** çalıştırır. `main`'e push'ta testler geçerse → Render deploy. |
+| **`mobile-ci.yml`** | `SafeRoute_App/mobile-app/**` → `push`/`PR` (main, develop) | Node 20 + `npm ci`, `tsc --noEmit` type-check, `expo lint` (bloke etmez), (varsa) Jest. `main`'e push'ta → `eas build --platform all`. |
+
+## Deploy akışı (backend → Render.com)
+
+1. `main`'e merge → `backend-ci` testleri koşar.
+2. Testler geçerse `deploy` job'ı **`production`** environment'ına girer.
+3. Environment'a **required reviewers** tanımlıysa, deploy biri **manuel onaylayana**
+   kadar bekler. Onay ekranından önce workflow bir **RLS & CORS hatırlatması**
+   (uyarı) basar — prod'a çıkmadan Supabase RLS ve CORS ayarları gözden geçirilmeli.
+4. Onaydan sonra `RENDER_DEPLOY_HOOK_URL`'e `curl POST` ile Render deploy tetiklenir.
+
+## Gerekli GitHub Secrets
+
+Repo **Settings → Secrets and variables → Actions** altına eklenmeli
+(değerler koda ASLA gömülmez):
+
+| Secret | Kullanıldığı yer | Açıklama |
+|---|---|---|
+| `RENDER_DEPLOY_HOOK_URL` | backend deploy | Render servisinin "Deploy Hook" URL'i |
+| `EXPO_TOKEN` | mobile build | Expo hesabı erişim token'ı (EAS Build) |
+
+> Backend testleri DB'yi ve grafı stub'lar, LLM `mock` modda koşar — bu yüzden
+> **CI testleri için gerçek secret gerekmez**. `DATABASE_URL`, `GEMINI_API_KEY`
+> gibi gerçek prod değerleri Render'ın kendi ortam değişkenlerinde tutulur
+> (bkz. `SafeRoute_App/backend/.env.example` ve `backend/DEPLOYMENT.md`).
+
+## Manuel onay kapısını kurma (bir kerelik)
+
+Repo **Settings → Environments → New environment → `production`** → **Required
+reviewers** ekleyin. Böylece `main`'e her merge otomatik prod'a çıkmaz; gözden
+geçirme sonrası elle onaylanır.
+
+---
+
 # Sprint 1
 
 ## Uygulama Ekran Görüntüleri

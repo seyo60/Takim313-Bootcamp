@@ -1,0 +1,79 @@
+name: Mobile CI
+
+# Mobil uygulamayı type-check + lint eder; main'e merge olduğunda EAS Build tetikler.
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "SafeRoute_App/mobile-app/**"
+      - ".github/workflows/mobile-ci.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "SafeRoute_App/mobile-app/**"
+      - ".github/workflows/mobile-ci.yml"
+
+defaults:
+  run:
+    working-directory: SafeRoute_App/mobile-app
+
+jobs:
+  check:
+    name: Type-check & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: SafeRoute_App/mobile-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check (tsc)
+        run: npx tsc --noEmit
+
+      # expo lint eslint'i gerektirir; kurulu değilse CI'ı kırmasın.
+      - name: Lint (expo lint, non-blocking)
+        run: npx expo lint || true
+
+      # Jest henüz yapılandırılmadı; script varsa çalıştır, yoksa atla.
+      - name: Jest tests (if configured)
+        run: |
+          if npm run 2>/dev/null | grep -qE "^  test"; then
+            npm test -- --ci
+          else
+            echo "Jest testi yapılandırılmamış — atlanıyor."
+          fi
+
+  build:
+    name: EAS Build (main only)
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: SafeRoute_App/mobile-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set up EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # --no-wait: build kuyruğa alınır, CI job'u beklemeden biter.
+      - name: EAS Build (all platforms)
+        run: eas build --platform all --non-interactive --no-wait
