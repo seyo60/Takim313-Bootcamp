@@ -4,7 +4,7 @@
 
 **Yapay Zeka ve Teknoloji Akademisi 2026** · Scrum süreçleri, sprint dokümantasyonları ve ürün yönetim merkezi
 
-[![Product Backlog](https://img.shields.io/badge/Notion-Product%20Backlog-000000?style=for-the-badge&logo=notion&logoColor=white)](https://app.notion.com/p/edebiyat/38f780ef363a80579a7dce0ee1e54335?v=38f780ef363a80a9a200000c88d2153f&source=copy_link)
+[![Product Backlog](https://img.shields.io/badge/Notion-Product%20Backlog-000000?style=for-the-badge&logo=notion&logoColor=white)](https://app.notion.com/p/takim313/394780ef363a8083b92feb12eef90a2f?v=c0f780ef363a82ebae3c089f7788f93f&source=copy_link)
 [![Sprint](https://img.shields.io/badge/Sprint-2%20Tamamlandı-2ea44f?style=for-the-badge)]()
 [![Team](https://img.shields.io/badge/Ekip-5%20Kişi-0969da?style=for-the-badge)]()
 
