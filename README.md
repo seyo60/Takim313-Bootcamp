@@ -113,7 +113,7 @@ Sprint 2 aşamasında ürün stratejisini netleştirmek adına ilgili dokümanta
 
 ## Proje Yönetimi (Project Management)
 * **Sprint 2 Notion Panosu (Genel Görünüm ve Biten İşler):**
-![Notion Board](https://app.notion.com/p/takim313/394780ef363a8083b92feb12eef90a2f?v=c0f780ef363a82ebae3c089f7788f93f&source=copy_link)
+[Product Backlog](https://app.notion.com/p/takim313/394780ef363a8083b92feb12eef90a2f?v=c0f780ef363a82ebae3c089f7788f93f&source=copy_link)
 
 ---
 
