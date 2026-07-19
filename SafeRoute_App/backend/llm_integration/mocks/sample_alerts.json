@@ -1,0 +1,24 @@
+[
+  {
+    "alert_id": "alert_001",
+    "target_user_id": "user_001",
+    "title": "Yakınınızda tehlike bildirimi",
+    "body": "500m yakınınızda silahlı kavga bildirildi. Alternatif rota önerilir.",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
+    "risk_score": 90.0,
+    "category": "violent",
+    "status": "sent"
+  },
+  {
+    "alert_id": "alert_002",
+    "target_user_id": "user_002",
+    "title": "Yakınınızda tehlike bildirimi",
+    "body": "300m yakınınızda şüpheli aktivite rapor edildi.",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
+    "risk_score": 60.0,
+    "category": "suspicious",
+    "status": "sent"
+  }
+]

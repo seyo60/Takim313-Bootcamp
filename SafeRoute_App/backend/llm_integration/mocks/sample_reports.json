@@ -1,0 +1,32 @@
+[
+  {
+    "latitude": 41.8781,
+    "longitude": -87.6298,
+    "text": "Burada silahlı bir kavga çıktı, polis geldi",
+    "user_score": 90
+  },
+  {
+    "latitude": 41.8819,
+    "longitude": -87.6278,
+    "text": "Karanlık sokak, lambalar yanmıyor, yalnız yürümek tehlikeli",
+    "user_score": 35
+  },
+  {
+    "latitude": 41.8500,
+    "longitude": -87.6500,
+    "text": "Şüpheli bir araç 10 dakikadır aynı yerde bekliyor",
+    "user_score": 60
+  },
+  {
+    "latitude": 41.8697,
+    "longitude": -87.6610,
+    "text": "Birisi bana tacizde bulundu, yardım lazım",
+    "user_score": 95
+  },
+  {
+    "latitude": 41.9214,
+    "longitude": -87.6513,
+    "text": "Sokakta köpek sürüsü var, geçmek zor",
+    "user_score": 25
+  }
+]

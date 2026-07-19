@@ -1,0 +1,49 @@
+# SafeRoute lokal gelistirme ortami
+# Calistirma: docker compose up --build
+# NOT: web servisi, db servisi pg_isready healthcheck'inden GECENE KADAR baslamaz
+# (depends_on: condition: service_healthy) + entrypoint.sh icinde ikinci bir
+# pg_isready beklemesi ve otomatik `alembic upgrade head` vardir.
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: saferoute
+      POSTGRES_PASSWORD: saferoute
+      POSTGRES_DB: saferoute
+    ports:
+      - "5432:5432"
+    volumes:
+      - saferoute_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saferoute -d saferoute"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://saferoute:saferoute@db:5432/saferoute
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: saferoute
+      GRAPH_PATH: /data-science/chicago.graphml
+      # Ilk kurulumda Chicago suç verisini otomatik yuklemek icin true yapin:
+      SEED_ON_START: "false"
+      # LLM ayarlari (.env dosyasindan da beslenebilir)
+      LLM_MODE: ${LLM_MODE:-mock}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8000:8000"
+
+volumes:
+  saferoute_pgdata:
