@@ -11,51 +11,72 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { submitReport } from "@/lib/api";
+import type { ReportPriority } from "@/lib/types";
 
 type SendState = "idle" | "sending" | "success" | "error";
 
 const MIN_TEXT_LENGTH = 5;
+/** Hold duration for the URGENT button before it fires (accident guard, AC #5). */
+const URGENT_HOLD_MS = 700;
 
 /**
- * Danger report screen (modal). The user describes what's happening in free
- * text; we send it with their coordinates to POST /api/v1/report. Analysis
- * happens in the backend (LLM, background) — we only get an acknowledgement,
- * so the UI promises "received", not "risk updated".
+ * Danger report screen (modal). Two ways to report:
  *
- * Coordinates arrive as route params from the map screen (the user's location,
- * or the Chicago fallback).
+ * - URGENT (item 4, Drew scenario): one gesture — hold the big red button — to
+ *   fire the highest-priority alert without filling in the form. The note is
+ *   optional; the location is attached automatically. Holding (rather than a
+ *   plain tap) guards against accidental presses (AC #5).
+ * - Standard: describe what's happening in free text, then "Gönder".
+ *
+ * Both POST to /api/v1/report; analysis happens in the backend (LLM,
+ * background), so we only get an acknowledgement — the UI promises "received".
+ *
+ * Coordinates arrive as route params from the map screen (the user's live
+ * location, or the Chicago fallback), i.e. the location is captured
+ * automatically — the user never types it.
  */
 export default function Report() {
   const { lng, lat } = useLocalSearchParams<{ lng?: string; lat?: string }>();
   const [text, setText] = useState("");
   const [state, setState] = useState<SendState>("idle");
+  // Which path succeeded/failed, so the confirmation matches (AC #4).
+  const [sentPriority, setSentPriority] = useState<ReportPriority>("normal");
+  // Visual feedback while the URGENT button is being held down.
+  const [holding, setHolding] = useState(false);
 
   const trimmed = text.trim();
-  const canSend =
-    trimmed.length >= MIN_TEXT_LENGTH &&
-    lng !== undefined &&
-    lat !== undefined &&
-    state !== "sending" &&
-    state !== "success";
+  const hasCoords = lng !== undefined && lat !== undefined;
+  const busy = state === "sending" || state === "success";
+  const canSendNormal =
+    trimmed.length >= MIN_TEXT_LENGTH && hasCoords && !busy;
 
-  const handleSend = async () => {
-    if (!canSend) return;
+  const send = async (priority: ReportPriority) => {
+    if (!hasCoords || busy) return;
+    // The standard path needs a description; urgent does not.
+    if (priority === "normal" && trimmed.length < MIN_TEXT_LENGTH) return;
+
+    setHolding(false);
+    setSentPriority(priority);
     setState("sending");
 
     const response = await submitReport({
-      text: trimmed,
+      // Urgent reports may carry no note — send a stand-in so the record isn't empty.
+      text: trimmed.length > 0 ? trimmed : "🚨 Acil durum bildirimi (detay girilmedi)",
       lng: Number(lng),
       lat: Number(lat),
+      priority,
     });
 
     if (response?.ok) {
       setState("success");
       // Brief confirmation, then back to the map (which refetches the heatmap).
-      setTimeout(() => router.back(), 1200);
+      setTimeout(() => router.back(), 1400);
     } else {
       setState("error");
     }
   };
+
+  const urgentSending = state === "sending" && sentPriority === "urgent";
 
   return (
     <KeyboardAvoidingView
@@ -69,48 +90,89 @@ export default function Report() {
         </Pressable>
       </View>
 
-      <Text style={styles.subtitle}>
-        Bulunduğun konumda ne olduğunu yaz. Bildirimin analiz edilip risk
-        haritasına işlenecek.
-      </Text>
-
-      <TextInput
-        style={styles.input}
-        value={text}
-        onChangeText={(value) => {
-          setText(value);
-          // Let the user edit and retry after a failure.
-          if (state === "error") setState("idle");
-        }}
-        placeholder='Ne oldu? (örn. "Bu sokakta birisi beni takip ediyor")'
-        placeholderTextColor="#8a8a8a"
-        multiline
-        maxLength={280}
-        autoFocus
-        editable={state !== "sending" && state !== "success"}
-      />
-      <Text style={styles.counter}>{trimmed.length}/280</Text>
-
-      {state === "error" ? (
-        <Text style={styles.error}>
-          Bildirim gönderilemedi — bağlantıyı kontrol edip tekrar dene.
-        </Text>
-      ) : null}
-
       {state === "success" ? (
-        <Text style={styles.success}>✓ Bildirimin alındı. Teşekkürler!</Text>
-      ) : (
-        <Pressable
-          style={[styles.sendButton, !canSend && styles.sendButtonDisabled]}
-          onPress={handleSend}
-          disabled={!canSend}
+        <Text
+          style={[
+            styles.success,
+            sentPriority === "urgent" && styles.successUrgent,
+          ]}
         >
-          {state === "sending" ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.sendButtonText}>Gönder</Text>
-          )}
-        </Pressable>
+          {sentPriority === "urgent"
+            ? "🚨 Acil durum bildirimin iletildi. Yakındaki kullanıcılar uyarılıyor."
+            : "✓ Bildirimin alındı. Teşekkürler!"}
+        </Text>
+      ) : (
+        <>
+          {/* Item 4: URGENT one-gesture path. */}
+          <Pressable
+            style={[styles.urgentButton, holding && styles.urgentButtonHolding]}
+            onLongPress={() => send("urgent")}
+            delayLongPress={URGENT_HOLD_MS}
+            onPressIn={() => setHolding(true)}
+            onPressOut={() => setHolding(false)}
+            disabled={busy}
+          >
+            {urgentSending ? (
+              <ActivityIndicator size="large" color="#fff" />
+            ) : (
+              <>
+                <Text style={styles.urgentIcon}>🚨</Text>
+                <Text style={styles.urgentText}>ACİL DURUM</Text>
+                <Text style={styles.urgentHint}>
+                  {holding
+                    ? "Bırakmadan bekleyin…"
+                    : "Göndermek için basılı tutun"}
+                </Text>
+              </>
+            )}
+          </Pressable>
+          <Text style={styles.urgentCaption}>
+            Konumun otomatik eklenir. Not girmen zorunlu değil.
+          </Text>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>veya detaylı bildir</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <TextInput
+            style={styles.input}
+            value={text}
+            onChangeText={(value) => {
+              setText(value);
+              // Let the user edit and retry after a failure.
+              if (state === "error") setState("idle");
+            }}
+            placeholder='Ne oldu? (örn. "Bu sokakta birisi beni takip ediyor")'
+            placeholderTextColor="#8a8a8a"
+            multiline
+            maxLength={280}
+            editable={!busy}
+          />
+          <Text style={styles.counter}>{trimmed.length}/280</Text>
+
+          {state === "error" ? (
+            <Text style={styles.error}>
+              Bildirim gönderilemedi — bağlantıyı kontrol edip tekrar dene.
+            </Text>
+          ) : null}
+
+          <Pressable
+            style={[
+              styles.sendButton,
+              !canSendNormal && styles.sendButtonDisabled,
+            ]}
+            onPress={() => send("normal")}
+            disabled={!canSendNormal}
+          >
+            {state === "sending" && sentPriority === "normal" ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.sendButtonText}>Gönder</Text>
+            )}
+          </Pressable>
+        </>
       )}
     </KeyboardAvoidingView>
   );
@@ -137,15 +199,62 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#777",
   },
-  subtitle: {
-    fontSize: 14,
-    color: "#555",
+  urgentButton: {
+    marginTop: 20,
+    minHeight: 130,
+    borderRadius: 16,
+    backgroundColor: "#E5484D",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    shadowColor: "#E5484D",
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  urgentButtonHolding: {
+    backgroundColor: "#B3201B",
+    transform: [{ scale: 0.98 }],
+  },
+  urgentIcon: {
+    fontSize: 40,
+  },
+  urgentText: {
+    marginTop: 6,
+    fontSize: 24,
+    fontWeight: "800",
+    letterSpacing: 1,
+    color: "#fff",
+  },
+  urgentHint: {
+    marginTop: 6,
+    fontSize: 13,
+    color: "rgba(255,255,255,0.9)",
+  },
+  urgentCaption: {
     marginTop: 8,
-    lineHeight: 20,
+    fontSize: 12,
+    color: "#888",
+    textAlign: "center",
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "#ddd",
+  },
+  dividerText: {
+    fontSize: 12,
+    color: "#999",
   },
   input: {
-    marginTop: 16,
-    minHeight: 120,
+    minHeight: 110,
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 12,
@@ -166,22 +275,26 @@ const styles = StyleSheet.create({
     color: "#E5484D",
   },
   success: {
-    marginTop: 16,
+    marginTop: 40,
     fontSize: 16,
     color: "#2E9E44",
     fontWeight: "600",
     textAlign: "center",
+    lineHeight: 24,
+  },
+  successUrgent: {
+    color: "#E5484D",
   },
   sendButton: {
-    marginTop: 16,
+    marginTop: 12,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "#E5484D",
+    backgroundColor: "#1D6FEB",
     alignItems: "center",
     justifyContent: "center",
   },
   sendButtonDisabled: {
-    backgroundColor: "#f0aeb1",
+    backgroundColor: "#a9c7f5",
   },
   sendButtonText: {
     fontSize: 16,

@@ -163,15 +163,21 @@ export async function getHeatmap(): Promise<HexRisk[] | null> {
  * mimicking what the backend pipeline will eventually do, so the
  * "report → new hot spot on the heatmap" flow is demoable today.
  *
- * TODO(osman): §C pending — confirm body field names and that the response is
- * acknowledgement-only; if analysis comes back synchronously, surface it in
- * the report screen.
+ * The optional `priority` field ("urgent") rides along in the body. If the
+ * backend doesn't support it yet, it's harmlessly ignored server-side; in mock
+ * mode we simulate acceptance (item 4, AC #3).
+ *
+ * TODO(osman): §C pending — confirm body field names, whether `priority` is
+ * honored, and that the response is acknowledgement-only; if analysis comes
+ * back synchronously, surface it in the report screen.
  */
 export async function submitReport(
   report: ReportRequest
 ): Promise<ReportResponse | null> {
   if (USE_MOCK_REPORT) {
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    // Urgent reports resolve faster to mimic a high-priority path.
+    const delay = report.priority === "urgent" ? 350 : 600;
+    await new Promise((resolve) => setTimeout(resolve, delay));
     addMockReportedHex(report.lng, report.lat);
     return { ok: true, id: `mock-${Date.now()}` };
   }

@@ -79,15 +79,23 @@ export interface HexRisk {
   risk_score: number;
 }
 
+/** Report urgency. "urgent" is the one-tap emergency path (item 4). */
+export type ReportPriority = "normal" | "urgent";
+
 /**
  * Body of POST /api/v1/report.
  *
- * TODO(osman): pending §C — field names to be confirmed.
+ * TODO(osman): pending §C — field names to be confirmed. `priority` may not be
+ * supported by the backend yet; it's sent regardless and simulated in mock mode
+ * (item 4, AC #3). Drop/rename here + in submitReport() once Seda Nur/Seymen
+ * confirm the field.
  */
 export interface ReportRequest {
   text: string;
   lat: number;
   lng: number;
+  /** Defaults to "normal" when omitted. */
+  priority?: ReportPriority;
 }
 
 /**
