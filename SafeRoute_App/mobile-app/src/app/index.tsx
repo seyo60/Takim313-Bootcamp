@@ -183,6 +183,7 @@ export default function Index() {
     variant: BannerVariant;
     text: string;
     onRetry?: () => void;
+    autoDismiss?: boolean;
   } | null =
     status === "error"
       ? {
@@ -199,7 +200,8 @@ export default function Index() {
               onRetry: refetchHeatmap,
             }
           : locationMessage
-            ? { variant: "info", text: locationMessage }
+            ? // Transient notice — fade it out after a few seconds.
+              { variant: "info", text: locationMessage, autoDismiss: true }
             : null;
 
   return (
@@ -326,6 +328,7 @@ export default function Index() {
           variant={banner.variant}
           text={banner.text}
           onRetry={banner.onRetry}
+          autoDismiss={banner.autoDismiss}
         />
       ) : null}
     </View>
