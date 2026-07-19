@@ -208,44 +208,24 @@ Belirlenen temel altyapı ve tasarım hedefleri doğrultusunda Sprint 1 için pl
 ## 🏃 Sprint 2
 
 <details open>
-<summary><strong>📱 Ürün Durumu & Görseller</strong></summary>
+<summary><strong>📱 Ürün Durumu</strong></summary>
 
 <br>
 
-Sprint 2 aşamasında ürün stratejisini netleştirmek adına ilgili dokümantasyonlar oluşturulmuş ve uygulamanın görünümünü netleştiren tasarımlar projeye dahil edilmiştir.
+Sprint 2 aşamasında ürün stratejisini netleştirmek adına ilgili dokümantasyonlar oluşturulmuş ve uygulamanın görünümünü netleştiren tasarımlar projeye dahil edilmiştir. Tamamlanan süreçlere ait dosyalar aşağıdadır:
 
-<br>
+- **UI/UX Figma Tasarımları:**
 
-<table>
-<tr>
-<td align="center" width="50%">
+![Figma Tasarımları](Sprint_2/Sprint2_PM/User%20Scenario%203.png)
 
-#### 🎨 Mimari & Kullanıcı Senaryosu
+- **Persona, Lean Canvas ve Kullanıcı Hikayeleri:**
 
-<img src="Sprint_2/Sprint2_PM/SafeRoute%20Mimarisi_%20Dinamik%20Risk%20ve%20Rota%20Entegrasyon%20Akışı.png" alt="SafeRoute Mimarisi" width="100%" />
+![Dokümantasyonlar](Sprint_2/Sprint2_PM/Lean%20Canvas%20.jpg)
 
-<br><br>
+![SafeRoute Mimarisi](Sprint_2/Sprint2_PM/SafeRoute%20Mimarisi_%20Dinamik%20Risk%20ve%20Rota%20Entegrasyon%20Akışı.png)
 
-<img src="Sprint_2/Sprint2_PM/User%20Scenario%203.png" alt="User Scenario" width="100%" />
-
-</td>
-<td align="center" width="50%">
-
-#### 📄 Persona, Lean Canvas & Kullanıcı Hikayeleri
-
-<img src="Sprint_2/Sprint2_PM/Lean%20Canvas%20.jpg" alt="Lean Canvas" width="100%" />
-
-<br><br>
-
-<a href="Sprint_2/Sprint2_PM/SafeRoute%20-%20Persona_compressed.pdf">📎 Persona (PDF)</a>
-
-<br><br>
-
-<a href="Sprint_2/Sprint2_PM/SafeRoute%20-Users%20Scenario_compressed%20(1)_compressed.pdf">📎 Kullanıcı Senaryoları (PDF)</a>
-
-</td>
-</tr>
-</table>
+- [Persona (PDF)](Sprint_2/Sprint2_PM/SafeRoute%20-%20Persona_compressed.pdf)
+- [Kullanıcı Senaryoları (PDF)](<Sprint_2/Sprint2_PM/SafeRoute%20-Users%20Scenario_compressed%20(1)_compressed.pdf>)
 
 </details>
 
@@ -255,7 +235,7 @@ Sprint 2 aşamasında ürün stratejisini netleştirmek adına ilgili dokümanta
 <br>
 
 - **Sprint 2 Notion Panosu (Genel Görünüm ve Biten İşler):**
-  [Product Backlog — Sprint 2](https://app.notion.com/p/takim313/394780ef363a8083b92feb12eef90a2f?v=c0f780ef363a82ebae3c089f7788f93f&source=copy_link)
+  [Product Backlog](https://app.notion.com/p/takim313/394780ef363a8083b92feb12eef90a2f?v=c0f780ef363a82ebae3c089f7788f93f&source=copy_link)
 
 </details>
 
@@ -264,76 +244,70 @@ Sprint 2 aşamasında ürün stratejisini netleştirmek adına ilgili dokümanta
 
 <br>
 
-- Ürün stratejisini ve kullanıcı kitlesini netleştirmek adına Persona, Lean Canvas ve Kullanıcı Hikayeleri dokümantasyonları oluşturuldu.
+- Ürün stratejisini ve kullanıcı kitlesini netleştirmek adına Persona, Yalın Canvas (Lean Canvas) ve Kullanıcı Hikayeleri dokümantasyonları başarıyla oluşturuldu.
 - Uygulamanın nihai görünümünü yansıtan Figma UI ekran görüntüleri hazırlandı ve projeye dahil edildi.
-- Sprint 2 Burn-down chart oluşturuldu ve gün bazlı takip edildi.
-- NLP modeli için veri araştırmaları yürütüldü ve veri setleri genişletildi.
-- Backend servislerinin deployment süreçleri tamamlandı; mobil uygulama ile API kontratları uyumlu hale getirildi.
+- Sprint 2 Burn-down chart (Kalan İş Grafiği) oluşturuldu ve gün bazlı takip edildi.
+- NLP modeli için veri araştırmaları yürütüldü ve projenin yapay zeka omurgası için veri setleri genişletildi.
+- Backend servislerinin deployment süreçleri tamamlandı ve mobil uygulama ile API arasındaki kontratlar tam uyumlu hale getirildi.
 
 </details>
 
 <details>
-<summary><strong>🎯 Puan & Tamamlama</strong></summary>
+<summary><strong>🎯 Sprint İçinde Tamamlanması Beklenen Puan</strong></summary>
 
 <br>
 
-| Metrik         | Değer                                            |
-| -------------- | ------------------------------------------------ |
-| **Hedef Puan** | 160                                              |
-| **Durum**      | ✅ Tamamlandı (LLM entegrasyonu detayları hariç) |
+- 160 Puan
+
+</details>
+
+<details>
+<summary><strong>📈 Puan Tamamlama Mantığı</strong></summary>
+
+<br>
 
 Belirlenen görev dağılımı doğrultusunda Sprint 2 için ayrılan iş yükü, devam eden LLM entegrasyonu detayları haricinde planlandığı gibi tamamlanmıştır.
 
 </details>
 
 <details>
-<summary><strong>🔍 Sprint Review</strong></summary>
+<summary><strong>🔍 Sprint Gözden Geçirilmesi (Sprint Review)</strong></summary>
 
 <br>
 
-**Ürün Yönetimi & Tasarım**
-
-- Kullanıcı Senaryosu, Persona ve Lean Canvas çalışmaları tamamlandı _(Seda Nur)_
-
-**Backend & Veritabanı**
-
-- Alembic ile versiyonlanmış veritabanı şeması ve güvenli seed sistemi _(BE-01)_
-- OSMnx + H3 ile gerçek risk ağırlıklı güvenli rota motoru _(BE-02)_
-- Canlı kullanıcı ihbarlarının asenkron risk güncelleme hattı _(BE-03)_
-- Mobil–Backend API kontrat uyumu _(BE-04)_
-- Render/Supabase deployment altyapısı _(BE-05)_
-- Otomasyon testleri ve teknik dokümantasyon _(BE-06)_
-
-**Frontend (Mobil)**
-
-- Rota görselleştirme ekranı (en kısa + güvenli rota hatları) _(Osman)_
-- Sokak/Rota risk açıklaması bileşeni (LLM destekli) arayüzü
-- Canlı risk verisiyle heatmap katmanı
-- İhbar formuna acil durum (URGENT) butonu
-
-**Yapay Zeka & Veri**
-
-- NLP modeli için yeni veri setleri ve eğitim araştırmaları _(Merve)_
-
-**Devam Eden**
-
-- LLM ile sokak güvenlik açıklaması ve anlık ihbar analizi _(Mehmet Ali)_
-
-**Katılımcılar:** Mehmet, Osman, Seymen, Merve, Seda Nur
+- **Ürün Yönetimi ve Tasarım:** Seda Nur tarafından yürütülen Kullanıcı Senaryosu, Persona ve Lean Canva çalışmaları başarıyla tamamlanarak 'Done' statüsüne alındı.
+- **Backend ve Veritabanı (BE):** Alembic ile versiyonlanmış veritabanı şeması ve güvenli seed sistemi oluşturuldu (BE-01).
+- OSMnx ve H3 altyapısı kullanılarak gerçek risk ağırlıklı güvenli rota motoru entegrasyonu sağlandı (BE-02).
+- Canlı kullanıcı ihbarlarının asenkron risk güncelleme hattı kuruldu (BE-03).
+- Mobil uygulama ile Backend API kontratlarının uyumlanması tamamlandı (BE-04).
+- Backend dockerize edilerek Render/Supabase deployment altyapısı başarıyla kuruldu (BE-05).
+- Backend otomasyon testleri yazıldı ve teknik çalıştırma dokümantasyonu hazırlandı (BE-06).
+- **Frontend (Mobil Uygulama):** Osman tarafından Rota görselleştirme ekranı (en kısa ve güvenli rota hatları ile detay paneli) kodlandı.
+- Sokak/Rota risk açıklaması bileşeni (LLM Destekli) arayüzü hazırlandı.
+- Canlı risk verisiyle heatmap katmanı entegrasyonu yapıldı.
+- İhbar formuna acil durum (URGENT) butonu eklendi.
+- **Yapay Zeka ve Veri:** Merve tarafından NLP modeli için yeni veri setleri eklendi ve model eğitim araştırmaları yapıldı.
+- **Bekleyen İşler (In Progress):** Mehmet Ali tarafından geliştirilen LLM ile sokak güvenlik açıklaması ve anlık ihbar analizi kodlamaları büyük ölçüde tamamlandı.
 
 </details>
 
 <details>
-<summary><strong>🔄 Sprint Retrospective</strong></summary>
+<summary><strong>👥 Sprint Gözden Geçirme Katılımcıları</strong></summary>
 
 <br>
 
-**Süreç Değerlendirmesi:** Sprint 1'de koordinasyon eksiklikleri süreçleri yavaşlattı. Sprint 2'de iletişimi iyileştirerek eşzamanlı çalışmayı başardık.
+- Mehmet, Osman, Seymen, Merve, Seda Nur
 
-**Gelecek Sprint Planları:**
+</details>
 
-- LLM servis bağlantılarının frontend'e tam entegrasyonu
-- Yakın kullanıcı bildirimi için Fallback UI geliştirmeleri
+<details>
+<summary><strong>🔄 Sprint Retrospektifi (Sprint Retrospective)</strong></summary>
+
+<br>
+
+- **Süreç Değerlendirmesi:** Sprint 1'de takım olarak organize olmakta ve birlikte çalışmakta çeşitli güçlükler çektik. Farklı dallarda çalışırken yaşanan koordinasyon eksiklikleri süreçleri yavaşlattı. Ancak bu sprintte sorunların üstüne giderek iletişim süreçlerimizi iyileştirdik. Sprint 2'de takım içi organizasyonu çok daha başarılı yürüttük ve bu zorlukların üstesinden gelerek gerçek bir takım olarak eşzamanlı çalışmayı başardık.
+- **Gelecek Sprint Planları:** Beklemede olan (In Progress) LLM servis bağlantılarının frontend tarafına tam entegrasyonunun sağlanması planlandı.
+- Yakın kullanıcı bildirimi için Fallback UI (Hata Durumu Arayüzü) geliştirmelerinin bitirilmesi hedeflendi.
 
 </details>
 
