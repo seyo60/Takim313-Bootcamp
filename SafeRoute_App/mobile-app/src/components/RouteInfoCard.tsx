@@ -1,5 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { RouteKind, RouteOption } from "@/lib/mockRoute";
+import type { StreetRiskExplanation } from "@/lib/types";
+import type { StreetRiskStatus } from "@/hooks/useStreetRisk";
+import { RiskExplanation } from "./RiskExplanation";
 
 interface Props {
   /** The routes to choose between (safe, and shortest when available). */
@@ -10,6 +13,10 @@ interface Props {
   onSelect: (kind: RouteKind) => void;
   /** Clears the destination + route (the ✕ button). */
   onClear: () => void;
+  /** Item 2: LLM risk explanation for the selected route. */
+  explanation: StreetRiskExplanation | null;
+  explanationStatus: StreetRiskStatus;
+  onRetryExplanation: () => void;
 }
 
 /** Line color per route, matching the map layers. */
@@ -50,6 +57,9 @@ export function RouteInfoCard({
   selectedKind,
   onSelect,
   onClear,
+  explanation,
+  explanationStatus,
+  onRetryExplanation,
 }: Props) {
   const selected =
     options.find((option) => option.kind === selectedKind) ?? options[0];
@@ -133,6 +143,13 @@ export function RouteInfoCard({
           <Text style={styles.closeText}>✕</Text>
         </Pressable>
       </View>
+
+      {/* Item 2: LLM risk explanation for the selected route. */}
+      <RiskExplanation
+        explanation={explanation}
+        status={explanationStatus}
+        onRetry={onRetryExplanation}
+      />
     </View>
   );
 }
