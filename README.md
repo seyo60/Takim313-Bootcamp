@@ -102,35 +102,56 @@ Belirlenen temel altyapı ve tasarım hedefleri doğrultusunda Sprint 1 için pl
 
 # Sprint 2
 
-**Sprint Notları**
+## Ürün Durumu
+Sprint 2 aşamasında ürün stratejisini netleştirmek adına ilgili dokümantasyonlar oluşturulmuş ve uygulamanın görünümünü netleştiren tasarımlar projeye dahil edilmiştir. Tamamlanan süreçlere ait dosyalar aşağıdadır:
+* **UI/UX Figma Tasarımları:**
+![Figma Tasarımları](gorsel_yolu.png)
+* **Persona, Lean Canvas ve Kullanıcı Hikayeleri:**
+![Dokümantasyonlar](gorsel_yolu.png)
+
+---
+
+## Proje Yönetimi (Project Management)
+* **Sprint 2 Notion Panosu (Genel Görünüm ve Biten İşler):**
+![Notion Board](https://app.notion.com/p/takim313/394780ef363a8083b92feb12eef90a2f?v=c0f780ef363a82ebae3c089f7788f93f&source=copy_link)
+
+---
+
+## Sprint Notları
 * Ürün stratejisini ve kullanıcı kitlesini netleştirmek adına Persona, Yalın Canvas (Lean Canvas) ve Kullanıcı Hikayeleri dokümantasyonları başarıyla oluşturuldu.
 * Uygulamanın nihai görünümünü yansıtan Figma UI ekran görüntüleri hazırlandı ve projeye dahil edildi.
 * Sprint 2 Burn-down chart (Kalan İş Grafiği) oluşturuldu ve gün bazlı takip edildi.
 * NLP modeli için veri araştırmaları yürütüldü ve projenin yapay zeka omurgası için veri setleri genişletildi.
 * Backend servislerinin deployment süreçleri tamamlandı ve mobil uygulama ile API arasındaki kontratlar tam uyumlu hale getirildi.
 
-**Ürün Durumu ve Ekran Görüntüleri**
-*(Tamamlanan süreçlere ve iş dağılımına ait ekran görüntüleri aşağıdadır)*
+## Sprint İçinde Tamamlanması Beklenen Puan
+* 160 Puan
 
-* **Sprint 2 Notion Panosu (Genel Görünüm ve Biten İşler):**
-![Notion Board](https://app.notion.com/p/edebiyat/394780ef363a8083b92feb12eef90a2f?v=c0f780ef363a82ebae3c089f7788f93f&source=copy_link)
+## Puan Tamamlama Mantığı
+Belirlenen görev dağılımı doğrultusunda Sprint 2 için ayrılan iş yükü, devam eden LLM entegrasyonu detayları haricinde planlandığı gibi tamamlanmıştır.
 
-* **UI/UX Figma Tasarımları:**
-![Figma Tasarımları](gorsel_yolu.png)
-
-* **Persona, Lean Canvas ve Kullanıcı Hikayeleri:**
-![Dokümantasyonlar](gorsel_yolu.png)
-
-**Sprint Gözden Geçirilmesi (Sprint Review)**
+## Sprint Gözden Geçirilmesi (Sprint Review)
 * **Ürün Yönetimi ve Tasarım:** Seda Nur tarafından yürütülen Kullanıcı Senaryosu, Persona ve Lean Canva çalışmaları başarıyla tamamlanarak 'Done' statüsüne alındı.
-* **Backend ve Veritabanı (BE):** Alembic ile versiyonlanmış veritabanı şeması ve güvenli seed sistemi oluşturuldu (BE-01). OSMnx ve H3 altyapısı kullanılarak gerçek risk ağırlıklı güvenli rota motoru entegrasyonu sağlandı (BE-02). Canlı kullanıcı ihbarlarının asenkron risk güncelleme hattı kuruldu (BE-03). Mobil uygulama ile Backend API kontratlarının uyumlanması tamamlandı (BE-04). Backend dockerize edilerek Render/Supabase deployment altyapısı başarıyla kuruldu (BE-05). Backend otomasyon testleri yazıldı ve teknik çalıştırma dokümantasyonu hazırlandı (BE-06).
-* **Frontend (Mobil Uygulama):** Osman tarafından Rota görselleştirme ekranı (en kısa ve güvenli rota hatları ile detay paneli) kodlandı. Sokak/Rota risk açıklaması bileşeni (LLM Destekli) arayüzü hazırlandı. Canlı risk verisiyle heatmap katmanı entegrasyonu yapıldı. İhbar formuna acil durum (URGENT) butonu eklendi.
+* **Backend ve Veritabanı (BE):** Alembic ile versiyonlanmış veritabanı şeması ve güvenli seed sistemi oluşturuldu (BE-01).
+* OSMnx ve H3 altyapısı kullanılarak gerçek risk ağırlıklı güvenli rota motoru entegrasyonu sağlandı (BE-02).
+* Canlı kullanıcı ihbarlarının asenkron risk güncelleme hattı kuruldu (BE-03).
+* Mobil uygulama ile Backend API kontratlarının uyumlanması tamamlandı (BE-04).
+* Backend dockerize edilerek Render/Supabase deployment altyapısı başarıyla kuruldu (BE-05).
+* Backend otomasyon testleri yazıldı ve teknik çalıştırma dokümantasyonu hazırlandı (BE-06).
+* **Frontend (Mobil Uygulama):** Osman tarafından Rota görselleştirme ekranı (en kısa ve güvenli rota hatları ile detay paneli) kodlandı.
+* Sokak/Rota risk açıklaması bileşeni (LLM Destekli) arayüzü hazırlandı.
+* Canlı risk verisiyle heatmap katmanı entegrasyonu yapıldı.
+* İhbar formuna acil durum (URGENT) butonu eklendi.
 * **Yapay Zeka ve Veri:** Merve tarafından NLP modeli için yeni veri setleri eklendi ve model eğitim araştırmaları yapıldı.
 * **Bekleyen İşler (In Progress):** Mehmet Ali tarafından geliştirilen LLM ile sokak güvenlik açıklaması ve anlık ihbar analizi kodlamaları büyük ölçüde tamamlandı.
 
-**Sprint Retrospektifi (Sprint Retrospective)**
+## Sprint Gözden Geçirme Katılımcıları
+* Mehmet, Osman, Seymen, Merve, Seda Nur
+
+## Sprint Retrospektifi (Sprint Retrospective)
 * **Süreç Değerlendirmesi:** Sprint 1'de takım olarak organize olmakta ve birlikte çalışmakta çeşitli güçlükler çektik. Farklı dallarda çalışırken yaşanan koordinasyon eksiklikleri süreçleri yavaşlattı. Ancak bu sprintte sorunların üstüne giderek iletişim süreçlerimizi iyileştirdik. Sprint 2'de takım içi organizasyonu çok daha başarılı yürüttük ve bu zorlukların üstesinden gelerek gerçek bir takım olarak eşzamanlı çalışmayı başardık.
-* **Gelecek Sprint Planları:** Beklemede olan (In Progress) LLM servis bağlantılarının frontend tarafına tam entegrasyonunun sağlanması ve yakın kullanıcı bildirimi için Fallback UI geliştirmelerinin bitirilmesi hedeflenmektedir.
+* **Gelecek Sprint Planları:** Beklemede olan (In Progress) LLM servis bağlantılarının frontend tarafına tam entegrasyonunun sağlanması planlandı.
+* Yakın kullanıcı bildirimi için Fallback UI (Hata Durumu Arayüzü) geliştirmelerinin bitirilmesi hedeflendi.
 
 ---
 
