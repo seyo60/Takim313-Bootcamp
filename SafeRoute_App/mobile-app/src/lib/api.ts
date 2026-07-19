@@ -1,15 +1,15 @@
 import axios, { AxiosError } from "axios";
 import type {
+  HexRisk,
   LngLat,
   ReportRequest,
   ReportResponse,
-  RiskPoint,
   RouteRequest,
   RouteResponse,
   StreetRiskExplanation,
 } from "./types";
 import { buildMockRouteResponse } from "./mockRoute";
-import { addMockReportedPoint, getMockRiskPoints } from "./mockHeatmap";
+import { addMockReportedHex, getMockHexRisk } from "./mockHeatmap";
 import { buildMockStreetRisk } from "./mockStreetRisk";
 
 /**
@@ -128,24 +128,25 @@ export async function getRoute(
 }
 
 /**
- * Fetches all risk points for the heatmap layer (GET /api/v1/heatmap).
- * Returns null on failure — never throws.
+ * Fetches the hexagon-risk cells for the heatmap layer (GET /api/v1/heatmap).
+ * Each cell is one H3 hexagon scored by the XGBoost batch prediction. Returns
+ * null on failure — never throws.
  *
- * While USE_MOCK_HEATMAP is true, resolves with local mock clusters instead.
+ * While USE_MOCK_HEATMAP is true, resolves with a local mock hexagon grid.
  *
  * TODO(osman): §B pending — response may be a GeoJSON FeatureCollection
  * instead of a flat array; adjust the parsing here (only here) if so.
  * TODO(osman): if the full-city payload turns out too heavy, switch to
  * GET /api/v1/heatmap/nearby with the user's location + radius.
  */
-export async function getHeatmap(): Promise<RiskPoint[] | null> {
+export async function getHeatmap(): Promise<HexRisk[] | null> {
   if (USE_MOCK_HEATMAP) {
     await new Promise((resolve) => setTimeout(resolve, 300));
-    return getMockRiskPoints();
+    return getMockHexRisk();
   }
 
   try {
-    const response = await api.get<RiskPoint[]>("/api/v1/heatmap");
+    const response = await api.get<HexRisk[]>("/api/v1/heatmap");
     return response.data;
   } catch (error) {
     logRequestError("getHeatmap (GET /api/v1/heatmap)", error);
@@ -158,7 +159,7 @@ export async function getHeatmap(): Promise<RiskPoint[] | null> {
  * analyzes the text in the background (LLM) — no risk score in the response.
  * Returns null on failure — never throws.
  *
- * In mock mode also plants a local high-risk point at the reported location,
+ * In mock mode also plants a local high-risk hexagon at the reported location,
  * mimicking what the backend pipeline will eventually do, so the
  * "report → new hot spot on the heatmap" flow is demoable today.
  *
@@ -171,7 +172,7 @@ export async function submitReport(
 ): Promise<ReportResponse | null> {
   if (USE_MOCK_REPORT) {
     await new Promise((resolve) => setTimeout(resolve, 600));
-    addMockReportedPoint(report.lng, report.lat);
+    addMockReportedHex(report.lng, report.lat);
     return { ok: true, id: `mock-${Date.now()}` };
   }
 
