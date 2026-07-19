@@ -16,7 +16,7 @@ import { useRoute } from "@/hooks/useRoute";
 import { useHeatmap } from "@/hooks/useHeatmap";
 import { useStreetRisk } from "@/hooks/useStreetRisk";
 import { getRouteBounds, getRouteOptions, type RouteKind } from "@/lib/mockRoute";
-import { riskPointsToFeatureCollection } from "@/lib/mockHeatmap";
+import { hexRiskToFeatureCollection } from "@/lib/mockHeatmap";
 import { DestinationSearchBar } from "@/components/DestinationSearchBar";
 import { RouteInfoCard } from "@/components/RouteInfoCard";
 import { StatusBanner, type BannerVariant } from "@/components/StatusBanner";
@@ -56,15 +56,18 @@ const destinationPinStyle = {
   circleStrokeColor: "#fff",
 } as const;
 
-// Risk heatmap: weight scales with each point's total_risk (0-100); the color
-// ramp goes transparent → green → amber → orange → red as density rises.
+// Risk heatmap (item 3): weight scales with each H3 cell's risk_score (0-100);
+// the color ramp goes transparent → green → amber → orange → red as density
+// rises. heatmapRadius scales with zoom so dense cells stay smooth when zoomed
+// out and don't smear when zoomed in (AC #2). Opacity 0.7 keeps the route line
+// readable on top (AC #5).
 const heatmapStyle: HeatmapLayerStyle = {
-  heatmapRadius: 40,
+  heatmapRadius: ["interpolate", ["linear"], ["zoom"], 10, 18, 14, 40, 16, 60],
   heatmapOpacity: 0.7,
   heatmapWeight: [
     "interpolate",
     ["linear"],
-    ["get", "total_risk"],
+    ["get", "risk_score"],
     0,
     0,
     100,
@@ -93,9 +96,9 @@ export default function Index() {
     useUserLocation();
   const [destination, setDestination] = useState<LngLat | null>(null);
 
-  // Item 5: risk heatmap data + visibility toggle.
+  // Item 3/5: hexagon risk data + visibility toggle.
   const {
-    points: riskPoints,
+    points: riskHexes,
     status: heatmapStatus,
     refetch: refetchHeatmap,
   } = useHeatmap();
@@ -222,11 +225,11 @@ export default function Index() {
           />
         )}
 
-        {/* Item 5: risk heatmap (green → red as risk density rises). */}
-        {showHeatmap && riskPoints.length > 0 ? (
+        {/* Item 3: hexagon risk heatmap (green → red as risk rises). */}
+        {showHeatmap && riskHexes.length > 0 ? (
           <ShapeSource
             id="heatmapSource"
-            shape={riskPointsToFeatureCollection(riskPoints)}
+            shape={hexRiskToFeatureCollection(riskHexes)}
           >
             <HeatmapLayer id="riskHeatmap" style={heatmapStyle} />
           </ShapeSource>
