@@ -220,22 +220,28 @@ Sprint 2 aşamasında ürün stratejisini netleştirmek adına ilgili dokümanta
 <tr>
 <td align="center" width="50%">
 
-#### 🎨 UI/UX Figma Tasarımları
+#### 🎨 Mimari & Kullanıcı Senaryosu
 
-<!-- Görsel yolunu kendi dosyanızla değiştirin -->
-<img src="gorsel_yolu.png" alt="Figma Tasarımları" width="100%" />
+<img src="Sprint_2/Sprint2_PM/SafeRoute%20Mimarisi_%20Dinamik%20Risk%20ve%20Rota%20Entegrasyon%20Akışı.png" alt="SafeRoute Mimarisi" width="100%" />
 
-<sub><code>gorsel_yolu.png</code> → Figma ekran görüntüleri</sub>
+<br><br>
+
+<img src="Sprint_2/Sprint2_PM/User%20Scenario%203.png" alt="User Scenario" width="100%" />
 
 </td>
 <td align="center" width="50%">
 
 #### 📄 Persona, Lean Canvas & Kullanıcı Hikayeleri
 
-<!-- Görsel yolunu kendi dosyanızla değiştirin -->
-<img src="gorsel_yolu.png" alt="Persona ve Dokümantasyonlar" width="100%" />
+<img src="Sprint_2/Sprint2_PM/Lean%20Canvas%20.jpg" alt="Lean Canvas" width="100%" />
 
-<sub><code>gorsel_yolu.png</code> → Persona / Lean Canvas / User Stories</sub>
+<br><br>
+
+<a href="Sprint_2/Sprint2_PM/SafeRoute%20-%20Persona_compressed.pdf">📎 Persona (PDF)</a>
+
+<br><br>
+
+<a href="Sprint_2/Sprint2_PM/SafeRoute%20-Users%20Scenario_compressed%20(1)_compressed.pdf">📎 Kullanıcı Senaryoları (PDF)</a>
 
 </td>
 </tr>
