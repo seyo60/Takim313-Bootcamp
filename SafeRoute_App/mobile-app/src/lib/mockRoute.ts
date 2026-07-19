@@ -161,9 +161,10 @@ export function getRouteBounds(coordinates: LngLat[]): RouteBounds | null {
   return {
     ne: [maxLng, maxLat],
     sw: [minLng, minLat],
-    // Leave room for the top notice banner and any bottom UI (route info card).
+    // Leave room for the top notice banner and the bottom detail card, which is
+    // now tall (stats + route toggle + LLM risk explanation).
     paddingTop: 100,
-    paddingBottom: 160,
+    paddingBottom: 300,
     paddingLeft: 60,
     paddingRight: 60,
   };

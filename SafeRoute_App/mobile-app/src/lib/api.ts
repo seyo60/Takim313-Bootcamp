@@ -6,9 +6,11 @@ import type {
   RiskPoint,
   RouteRequest,
   RouteResponse,
+  StreetRiskExplanation,
 } from "./types";
 import { buildMockRouteResponse } from "./mockRoute";
 import { addMockReportedPoint, getMockRiskPoints } from "./mockHeatmap";
+import { buildMockStreetRisk } from "./mockStreetRisk";
 
 /**
  * While the backend endpoints are not live yet, API calls below return local
@@ -24,6 +26,13 @@ const USE_MOCK_HEATMAP = true;
 
 /** TODO(osman): set to false when POST /api/v1/report is live (§C). */
 const USE_MOCK_REPORT = true;
+
+/**
+ * TODO(osman): set to false when POST /api/v1/street-risk-explanation is live
+ * (§D). Note: develop already has a live LLM module — coordinate with Seymen on
+ * the exact route + payload before flipping this.
+ */
+const USE_MOCK_STREET_RISK = true;
 
 /**
  * Backend base URL. Set EXPO_PUBLIC_API_BASE_URL in .env to your teammate's
@@ -171,6 +180,47 @@ export async function submitReport(
     return response.data;
   } catch (error) {
     logRequestError("submitReport (POST /api/v1/report)", error);
+    return null;
+  }
+}
+
+/**
+ * Fetches the LLM risk explanation for a street/route point
+ * (POST /api/v1/street-risk-explanation). Returns the parsed response on
+ * success, or null on any failure — never throws, so the caller can render a
+ * fallback state (item 2, AC #6 / item 6).
+ *
+ * While USE_MOCK_STREET_RISK is true, resolves with a synthesized explanation
+ * derived from `riskScore` (same StreetRiskExplanation shape).
+ *
+ * @param location  representative point on the route being explained.
+ * @param riskScore the route's 0-100 risk score — a MOCK-ONLY hint used to
+ *   pick the level/text. The real backend derives risk from the location and
+ *   ignores this; kept in the signature so mock mode has interesting output.
+ */
+export async function getStreetRiskExplanation(
+  location: LngLat,
+  riskScore: number
+): Promise<StreetRiskExplanation | null> {
+  if (USE_MOCK_STREET_RISK) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return buildMockStreetRisk(riskScore);
+  }
+
+  try {
+    // TODO(osman): §D — confirm request shape (location + hour?) and the exact
+    // route once develop's LLM module is wired to a public endpoint.
+    const [lng, lat] = location;
+    const response = await api.post<StreetRiskExplanation>(
+      "/api/v1/street-risk-explanation",
+      { lat, lng, hour: new Date().getHours() }
+    );
+    return response.data;
+  } catch (error) {
+    logRequestError(
+      "getStreetRiskExplanation (POST /api/v1/street-risk-explanation)",
+      error
+    );
     return null;
   }
 }
