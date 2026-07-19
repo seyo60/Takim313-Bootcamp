@@ -1,23 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
 import { getHeatmap } from "@/lib/api";
-import type { RiskPoint } from "@/lib/types";
+import type { HexRisk } from "@/lib/types";
 
 export type HeatmapStatus = "loading" | "ready" | "error";
 
 export interface UseHeatmapResult {
-  points: RiskPoint[];
+  points: HexRisk[];
   status: HeatmapStatus;
-  /** Reloads the risk points (e.g. after a danger report is submitted). */
+  /** Reloads the risk cells (e.g. after a danger report is submitted). */
   refetch: () => void;
 }
 
 /**
- * Loads the risk points on mount; `refetch()` reloads them on demand.
- * While a refetch is in flight the previous points stay on screen so the
+ * Loads the hexagon-risk cells on mount; `refetch()` reloads them on demand.
+ * While a refetch is in flight the previous cells stay on screen so the
  * layer doesn't flicker.
  */
 export function useHeatmap(): UseHeatmapResult {
-  const [points, setPoints] = useState<RiskPoint[]>([]);
+  const [points, setPoints] = useState<HexRisk[]>([]);
   const [status, setStatus] = useState<HeatmapStatus>("loading");
   // Bumping this re-runs the fetch effect.
   const [nonce, setNonce] = useState(0);

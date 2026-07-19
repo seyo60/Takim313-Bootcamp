@@ -60,15 +60,23 @@ export interface RouteResponse {
 }
 
 /**
- * One risk point from GET /api/v1/heatmap (and /heatmap/nearby).
+ * One H3 hexagon cell's risk from GET /api/v1/heatmap. The backend's XGBoost
+ * batch prediction scores each H3 cell; `lat`/`lng` are the cell centroid and
+ * `risk_score` is 0 (safe) – 100 (dangerous). Rendered as the risk heatmap
+ * (item 3).
  *
- * TODO(osman): pending §B — could also arrive as GeoJSON FeatureCollection<Point>;
- * field name `total_risk` and its 0-100 scale to be confirmed.
+ * TODO(osman): pending §B — confirm exact field names (`h3_index` vs `cell`,
+ * `risk_score` vs `total_risk`) and whether the payload is a flat array or a
+ * GeoJSON FeatureCollection; if so, adjust the parsing in getHeatmap() only.
  */
-export interface RiskPoint {
+export interface HexRisk {
+  /** H3 cell index (resolution ~9). */
+  h3_index: string;
+  /** Cell centroid, [longitude, latitude] split into lat/lng. */
   lat: number;
   lng: number;
-  total_risk: number;
+  /** Batch-predicted risk for the cell, 0-100. */
+  risk_score: number;
 }
 
 /**
