@@ -14,6 +14,24 @@
 
 import type { LngLat, RouteResponse } from "./types";
 
+/** Which of the two routes the user is currently looking at. */
+export type RouteKind = "safe" | "shortest";
+
+/**
+ * A single route flattened for the UI: geometry + the stats needed by the
+ * detail panel, plus a stable label/kind for the selection toggle. Both the
+ * safe and shortest routes become one of these, so the map and panel iterate a
+ * uniform list instead of special-casing each route (item 1, AC #3/#4).
+ */
+export interface RouteOption {
+  kind: RouteKind;
+  label: string;
+  geometry: GeoJSON.LineString;
+  distance_m: number;
+  duration_s: number;
+  risk_score: number;
+}
+
 /** Ordered points that make up the mock route line. */
 export const MOCK_ROUTE_COORDINATES: LngLat[] = [
   [-87.6359, 41.8781], // near Willis Tower
@@ -61,14 +79,54 @@ export function buildMockRouteResponse(
     distance_m: 1350,
     duration_s: 1020, // ~17 min walk
     risk_score: 24, // fairly safe demo value
-    // The direct-but-riskier alternative, for the comparison view (item 8).
+    // The direct-but-riskier alternative, for the comparison + toggle (item 1).
+    // It's shorter/faster than the safe route but carries a higher risk score —
+    // that trade-off is the whole point the user weighs.
     // TODO(osman): §A — if the backend ends up not returning `shortest`,
     // the UI already handles its absence (comparison simply not shown).
     shortest: {
-      type: "LineString",
-      coordinates: MOCK_SHORTEST_COORDINATES,
+      route: {
+        type: "LineString",
+        coordinates: MOCK_SHORTEST_COORDINATES,
+      },
+      distance_m: 1120, // shorter than the safe route (1350 m)
+      duration_s: 840, // ~14 min walk (vs ~17 min)
+      risk_score: 58, // riskier than the safe route (24)
     },
   };
+}
+
+/**
+ * Flattens a RouteResponse into the list of routes the UI renders and toggles
+ * between: always the safe route, plus the shortest one when present. Keeping
+ * this in one place means the map layers, the camera fit and the detail panel
+ * all read from the same normalized shape (item 1, AC #4) — swapping the mock
+ * for the real backend never touches those components.
+ */
+export function getRouteOptions(response: RouteResponse): RouteOption[] {
+  const options: RouteOption[] = [
+    {
+      kind: "safe",
+      label: "Güvenli",
+      geometry: response.route,
+      distance_m: response.distance_m,
+      duration_s: response.duration_s,
+      risk_score: response.risk_score,
+    },
+  ];
+
+  if (response.shortest) {
+    options.push({
+      kind: "shortest",
+      label: "En kısa",
+      geometry: response.shortest.route,
+      distance_m: response.shortest.distance_m,
+      duration_s: response.shortest.duration_s,
+      risk_score: response.shortest.risk_score,
+    });
+  }
+
+  return options;
 }
 
 /** Camera bounds (with padding) that frame a set of coordinates on screen. */

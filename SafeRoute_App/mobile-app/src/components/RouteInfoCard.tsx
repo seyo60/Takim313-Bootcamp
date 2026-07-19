@@ -1,11 +1,22 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import type { RouteResponse } from "@/lib/types";
+import type { RouteKind, RouteOption } from "@/lib/mockRoute";
 
 interface Props {
-  route: RouteResponse;
+  /** The routes to choose between (safe, and shortest when available). */
+  options: RouteOption[];
+  /** Which route is currently selected (highlighted on the map). */
+  selectedKind: RouteKind;
+  /** Switch the selected route (item 1, AC #3). */
+  onSelect: (kind: RouteKind) => void;
   /** Clears the destination + route (the ✕ button). */
   onClear: () => void;
 }
+
+/** Line color per route, matching the map layers. */
+const ROUTE_COLORS: Record<RouteKind, string> = {
+  safe: "#1D6FEB",
+  shortest: "#8A8A8A",
+};
 
 /** "850 m" below 1 km, "1.4 km" above. */
 function formatDistance(meters: number): string {
@@ -26,28 +37,58 @@ function riskInfo(score: number): { label: string; color: string } {
 }
 
 /**
- * Bottom card summarizing the fetched route: distance, walking time and the
- * 0-100 risk score from the backend.
+ * Bottom panel summarizing the selected route: distance, walking time and the
+ * 0-100 risk score from the backend. When both a safe and a shortest route are
+ * available it shows a segmented toggle so the user can switch between them
+ * (item 1, AC #2/#3); the map highlights whichever is selected here.
  *
  * Visuals are intentionally plain — proper styling lands with the Figma
  * designs (end-to-end.md, item 9).
  */
-export function RouteInfoCard({ route, onClear }: Props) {
-  const risk = riskInfo(route.risk_score);
+export function RouteInfoCard({
+  options,
+  selectedKind,
+  onSelect,
+  onClear,
+}: Props) {
+  const selected =
+    options.find((option) => option.kind === selectedKind) ?? options[0];
+  if (!selected) return null;
+
+  const risk = riskInfo(selected.risk_score);
+  // Only show the toggle when there's an actual choice to make.
+  const showToggle = options.length > 1;
 
   return (
     <View style={styles.card}>
-      {/* Item 8: legend, shown only when the shortest route is on the map. */}
-      {route.shortest ? (
-        <View style={styles.legend}>
-          <View style={styles.legendItem}>
-            <View style={styles.legendLineSafe} />
-            <Text style={styles.legendText}>Güvenli rota</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={styles.legendLineShortest} />
-            <Text style={styles.legendText}>En kısa (riskli olabilir)</Text>
-          </View>
+      {/* Item 1: route selection toggle (segmented control). */}
+      {showToggle ? (
+        <View style={styles.toggle}>
+          {options.map((option) => {
+            const active = option.kind === selectedKind;
+            return (
+              <Pressable
+                key={option.kind}
+                style={[styles.segment, active && styles.segmentActive]}
+                onPress={() => onSelect(option.kind)}
+              >
+                <View
+                  style={[
+                    styles.segmentDot,
+                    { backgroundColor: ROUTE_COLORS[option.kind] },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.segmentText,
+                    active && styles.segmentTextActive,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       ) : null}
 
@@ -55,7 +96,7 @@ export function RouteInfoCard({ route, onClear }: Props) {
         <View style={styles.stats}>
           <View style={styles.stat}>
             <Text style={styles.statValue}>
-              {formatDistance(route.distance_m)}
+              {formatDistance(selected.distance_m)}
             </Text>
             <Text style={styles.statLabel}>Mesafe</Text>
           </View>
@@ -64,7 +105,7 @@ export function RouteInfoCard({ route, onClear }: Props) {
 
           <View style={styles.stat}>
             <Text style={styles.statValue}>
-              {formatDuration(route.duration_s)}
+              {formatDuration(selected.duration_s)}
             </Text>
             <Text style={styles.statLabel}>Yürüyüş</Text>
           </View>
@@ -73,7 +114,7 @@ export function RouteInfoCard({ route, onClear }: Props) {
 
           <View style={styles.stat}>
             <Text style={[styles.statValue, { color: risk.color }]}>
-              {Math.round(route.risk_score)}
+              {Math.round(selected.risk_score)}
             </Text>
             <Text style={[styles.statLabel, { color: risk.color }]}>
               {risk.label}
@@ -112,36 +153,43 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
-  legend: {
+  toggle: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-    marginBottom: 10,
-    paddingBottom: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e5e5e5",
+    backgroundColor: "#f2f2f2",
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 12,
   },
-  legendItem: {
+  segment: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
+    paddingVertical: 7,
+    borderRadius: 8,
   },
-  legendLineSafe: {
-    width: 22,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#1D6FEB",
+  segmentActive: {
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
-  legendLineShortest: {
-    width: 22,
-    height: 0,
-    borderBottomWidth: 3,
-    borderStyle: "dashed",
-    borderColor: "#8A8A8A",
+  segmentDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
-  legendText: {
-    fontSize: 12,
-    color: "#555",
+  segmentText: {
+    fontSize: 13,
+    color: "#777",
+    fontWeight: "500",
+  },
+  segmentTextActive: {
+    color: "#111",
+    fontWeight: "600",
   },
   mainRow: {
     flexDirection: "row",

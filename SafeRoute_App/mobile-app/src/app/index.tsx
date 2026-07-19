@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import Mapbox, {
@@ -14,7 +14,7 @@ import Mapbox, {
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { useRoute } from "@/hooks/useRoute";
 import { useHeatmap } from "@/hooks/useHeatmap";
-import { getRouteBounds } from "@/lib/mockRoute";
+import { getRouteBounds, getRouteOptions, type RouteKind } from "@/lib/mockRoute";
 import { riskPointsToFeatureCollection } from "@/lib/mockHeatmap";
 import { DestinationSearchBar } from "@/components/DestinationSearchBar";
 import { RouteInfoCard } from "@/components/RouteInfoCard";
@@ -28,24 +28,25 @@ Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? "");
 // street graph) is Chicago-based, so the demo lives here.
 const CHICAGO: LngLat = [-87.6298, 41.8781];
 
-// Mapbox layer styles (style-spec objects, not React Native styles).
-const routeLineStyle = {
-  lineColor: "#1D6FEB",
-  lineWidth: 5,
-  lineCap: "round",
-  lineJoin: "round",
-} as const;
-
-// The plain shortest route: dashed gray, visually secondary to the safe route.
+// Line color per route kind. Safe is a solid blue; the shortest is a dashed
+// gray so the two read as clearly different even before highlighting.
 // (Plan said green for the safe route, but green would blend into the
 // heatmap's low-risk ramp — blue vs gray reads clearer on this basemap.)
-const shortestLineStyle: LineLayerStyle = {
-  lineColor: "#8A8A8A",
-  lineWidth: 4,
-  lineCap: "round",
-  lineJoin: "round",
-  lineDasharray: [1.5, 1.5],
-};
+const SAFE_COLOR = "#1D6FEB";
+const SHORTEST_COLOR = "#8A8A8A";
+
+// Item 1 (AC #3): the selected route is drawn bold and opaque; the other one
+// fades back so the choice is unmistakable on the map.
+function lineStyleFor(kind: RouteKind, selected: boolean): LineLayerStyle {
+  return {
+    lineColor: kind === "safe" ? SAFE_COLOR : SHORTEST_COLOR,
+    lineWidth: selected ? 6 : 4,
+    lineOpacity: selected ? 1 : 0.3,
+    lineCap: "round",
+    lineJoin: "round",
+    ...(kind === "shortest" ? { lineDasharray: [1.5, 1.5] } : {}),
+  };
+}
 
 const destinationPinStyle = {
   circleRadius: 8,
@@ -125,6 +126,16 @@ export default function Index() {
     retry: retryRoute,
   } = useRoute(destination ? origin : null, destination);
 
+  // Item 1: normalized list of routes to draw + toggle between (safe, and the
+  // shortest when present), plus which one is currently selected.
+  const routeOptions = route ? getRouteOptions(route) : [];
+  const [selectedKind, setSelectedKind] = useState<RouteKind>("safe");
+
+  // A freshly fetched route always starts on the safe option.
+  useEffect(() => {
+    setSelectedKind("safe");
+  }, [route]);
+
   const handleSearchSelect = useCallback((result: GeocodingResult) => {
     setDestination(result.coordinate);
   }, []);
@@ -137,12 +148,13 @@ export default function Index() {
 
   const clearDestination = useCallback(() => setDestination(null), []);
 
-  // Frame both routes (safe + shortest) when the comparison is available.
-  const bounds = route
-    ? getRouteBounds([
-        ...(route.route.coordinates as LngLat[]),
-        ...((route.shortest?.coordinates as LngLat[] | undefined) ?? []),
-      ])
+  // Frame every route (safe + shortest) when a comparison is available.
+  const bounds = routeOptions.length
+    ? getRouteBounds(
+        routeOptions.flatMap(
+          (option) => option.geometry.coordinates as LngLat[]
+        )
+      )
     : null;
 
   // Item 7: one banner slot, priority: route error > route loading >
@@ -198,29 +210,31 @@ export default function Index() {
           </ShapeSource>
         ) : null}
 
-        {/* Item 8: the plain shortest route (dashed gray), under the safe one. */}
-        {route?.shortest ? (
-          <ShapeSource
-            id="shortestSource"
-            shape={{
-              type: "Feature",
-              properties: {},
-              geometry: route.shortest,
-            }}
-          >
-            <LineLayer id="shortestLine" style={shortestLineStyle} />
-          </ShapeSource>
-        ) : null}
-
-        {/* The safe route line, drawn from the API response. */}
-        {route ? (
-          <ShapeSource
-            id="routeSource"
-            shape={{ type: "Feature", properties: {}, geometry: route.route }}
-          >
-            <LineLayer id="routeLine" style={routeLineStyle} />
-          </ShapeSource>
-        ) : null}
+        {/* Item 1: both routes, unselected drawn first so the selected (bold,
+            opaque) one always sits on top and reads as the active choice. */}
+        {routeOptions
+          .slice()
+          .sort((a, b) => {
+            const aSel = a.kind === selectedKind ? 1 : 0;
+            const bSel = b.kind === selectedKind ? 1 : 0;
+            return aSel - bSel;
+          })
+          .map((option) => (
+            <ShapeSource
+              key={option.kind}
+              id={`routeSource-${option.kind}`}
+              shape={{
+                type: "Feature",
+                properties: {},
+                geometry: option.geometry,
+              }}
+            >
+              <LineLayer
+                id={`routeLine-${option.kind}`}
+                style={lineStyleFor(option.kind, option.kind === selectedKind)}
+              />
+            </ShapeSource>
+          ))}
 
         {/* Destination pin (red dot with white ring). */}
         {destination ? (
@@ -264,8 +278,16 @@ export default function Index() {
         <Text style={styles.reportButtonText}>⚠️</Text>
       </Pressable>
 
-      {/* Item 4: route summary (distance / time / risk) with its own ✕. */}
-      {route ? <RouteInfoCard route={route} onClear={clearDestination} /> : null}
+      {/* Item 1: route detail panel — selected route's distance / time / risk,
+          with the safe⇄shortest toggle and its own ✕. */}
+      {routeOptions.length ? (
+        <RouteInfoCard
+          options={routeOptions}
+          selectedKind={selectedKind}
+          onSelect={setSelectedKind}
+          onClear={clearDestination}
+        />
+      ) : null}
 
       {/* Fallback clear button while there's a destination but no route yet
           (loading or error) — the card isn't on screen to host the ✕. */}

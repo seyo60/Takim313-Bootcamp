@@ -25,10 +25,28 @@ export interface RouteRequest {
 }
 
 /**
+ * The plain shortest route returned alongside the safe one, for the
+ * "shortest vs safest" comparison + selection toggle (item 1 / item 8). It
+ * carries its own stats so the detail panel can show the *selected* route's
+ * numbers, not just the safe route's.
+ *
+ * TODO(osman): pending §A — confirm the backend returns these per-route stats
+ * (distance/duration/risk) for `shortest`, not just its geometry.
+ */
+export interface ShortestRoute {
+  /** The shortest route as a GeoJSON LineString ([lng, lat] pairs). */
+  route: GeoJSON.LineString;
+  distance_m: number;
+  duration_s: number;
+  /** Risk along this route, 0 (safe) – 100 (dangerous). */
+  risk_score: number;
+}
+
+/**
  * Response of POST /api/v1/route.
  *
  * TODO(osman): pending §A decisions — is `risk_score` an average or a total?
- * Will `shortest` be included for comparison (item 8)?
+ * Will `shortest` be included for comparison (item 1 / item 8)?
  */
 export interface RouteResponse {
   /** The safe route as a GeoJSON LineString ([lng, lat] pairs). */
@@ -37,8 +55,8 @@ export interface RouteResponse {
   duration_s: number;
   /** Risk along the route, 0 (safe) – 100 (dangerous). */
   risk_score: number;
-  /** Optional: plain shortest route, for the "shortest vs safest" comparison. */
-  shortest?: GeoJSON.LineString;
+  /** Optional: plain shortest route (geometry + its own stats), for comparison. */
+  shortest?: ShortestRoute;
 }
 
 /**
