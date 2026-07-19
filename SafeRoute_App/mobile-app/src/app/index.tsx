@@ -14,6 +14,7 @@ import Mapbox, {
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { useRoute } from "@/hooks/useRoute";
 import { useHeatmap } from "@/hooks/useHeatmap";
+import { useStreetRisk } from "@/hooks/useStreetRisk";
 import { getRouteBounds, getRouteOptions, type RouteKind } from "@/lib/mockRoute";
 import { hexRiskToFeatureCollection } from "@/lib/mockHeatmap";
 import { DestinationSearchBar } from "@/components/DestinationSearchBar";
@@ -139,6 +140,25 @@ export default function Index() {
     setSelectedKind("safe");
   }, [route]);
 
+  // Item 2: the currently selected route + a representative point on it (its
+  // midpoint) drive the LLM risk explanation. Switching the toggle re-fetches
+  // so the explanation always matches the highlighted route.
+  const selectedOption =
+    routeOptions.find((option) => option.kind === selectedKind) ??
+    routeOptions[0] ??
+    null;
+  const selectedCoords = selectedOption?.geometry.coordinates as
+    | LngLat[]
+    | undefined;
+  const explainPoint = selectedCoords
+    ? selectedCoords[Math.floor(selectedCoords.length / 2)]
+    : null;
+  const {
+    explanation,
+    status: explanationStatus,
+    retry: retryExplanation,
+  } = useStreetRisk(explainPoint, selectedOption?.risk_score ?? null);
+
   const handleSearchSelect = useCallback((result: GeocodingResult) => {
     setDestination(result.coordinate);
   }, []);
@@ -166,6 +186,7 @@ export default function Index() {
     variant: BannerVariant;
     text: string;
     onRetry?: () => void;
+    autoDismiss?: boolean;
   } | null =
     status === "error"
       ? {
@@ -182,7 +203,8 @@ export default function Index() {
               onRetry: refetchHeatmap,
             }
           : locationMessage
-            ? { variant: "info", text: locationMessage }
+            ? // Transient notice — fade it out after a few seconds.
+              { variant: "info", text: locationMessage, autoDismiss: true }
             : null;
 
   return (
@@ -289,6 +311,9 @@ export default function Index() {
           selectedKind={selectedKind}
           onSelect={setSelectedKind}
           onClear={clearDestination}
+          explanation={explanation}
+          explanationStatus={explanationStatus}
+          onRetryExplanation={retryExplanation}
         />
       ) : null}
 
@@ -306,6 +331,7 @@ export default function Index() {
           variant={banner.variant}
           text={banner.text}
           onRetry={banner.onRetry}
+          autoDismiss={banner.autoDismiss}
         />
       ) : null}
     </View>
