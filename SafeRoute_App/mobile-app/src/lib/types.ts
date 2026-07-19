@@ -95,3 +95,45 @@ export interface ReportResponse {
   ok: boolean;
   id?: string;
 }
+
+/**
+ * Risk severity bucket for a street/route, driving the colored badge
+ * (item 2, AC #1): low=green, medium=yellow, high=orange, critical=red.
+ */
+export type RiskLevel = "low" | "medium" | "high" | "critical";
+
+/**
+ * The risk score broken down by source channel, each 0-100. These feed the
+ * LLM explanation and are shown as a small breakdown under the summary.
+ *
+ * TODO(osman): pending backend §D — confirm channel names/scale for
+ * GET|POST /api/v1/street-risk-explanation.
+ */
+export interface RiskChannels {
+  /** Crime history / static risk (OSMnx + crime ETL). */
+  historical: number;
+  /** Live signals (recent reports, time-of-day). */
+  live: number;
+  /** Social/NLP-derived risk (reports, social webhook). */
+  social: number;
+  /** Combined score the badge/level is derived from. */
+  total: number;
+}
+
+/**
+ * Response of the LLM street-risk explanation endpoint
+ * (POST /api/v1/street-risk-explanation). The backend runs the LLM over the
+ * risk channels and returns a short, human-readable rationale.
+ *
+ * TODO(osman): pending §D — confirm field names + that the text is
+ * pre-truncated (≤2 sentences) server-side or if the UI must clamp it.
+ */
+export interface StreetRiskExplanation {
+  risk_level: RiskLevel;
+  /** ≤2 sentence Turkish rationale for why the street/route is risky. */
+  explanation: string;
+  /** Up to 3 concrete risk factors (e.g. "Zayıf aydınlatma"). */
+  factors: string[];
+  /** Per-channel breakdown (historical/live/social/total). */
+  channels: RiskChannels;
+}
