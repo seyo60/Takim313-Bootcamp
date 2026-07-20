@@ -102,6 +102,32 @@ export interface ReportResponse {
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 
 /**
+ * A danger alert for users near a fresh report (item 5). Field names follow
+ * the backend's llm_integration/schemas/types.py `AlertMessage` model — the
+ * alert_dispatcher service builds these after the LLM analyzes a report.
+ *
+ * TODO(osman): the dispatcher is not exposed over HTTP yet — ask Seymen for
+ * the route (suggested: GET /api/v1/alerts/nearby?lat=..&lng=..&radius=..).
+ * Until then USE_MOCK_ALERTS stays true in api.ts.
+ */
+export interface NearbyAlert {
+  alert_id: string;
+  title: string;
+  /** e.g. "300m yakınınızda şüpheli aktivite rapor edildi." */
+  body: string;
+  /** Where the reported danger is. */
+  latitude: number;
+  longitude: number;
+  /** LLM-scored severity of the underlying report, 0-100. */
+  risk_score: number;
+  /** violent | theft | harassment | suspicious | environmental | other */
+  category: string;
+  /** ISO timestamp (wire) — kept as string on mobile. */
+  created_at?: string;
+  status?: "pending" | "sent" | "failed";
+}
+
+/**
  * The risk score broken down by source channel, each 0-100. These feed the
  * LLM explanation and are shown as a small breakdown under the summary.
  *

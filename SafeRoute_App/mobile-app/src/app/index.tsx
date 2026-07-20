@@ -15,11 +15,13 @@ import { useUserLocation } from "@/hooks/useUserLocation";
 import { useRoute } from "@/hooks/useRoute";
 import { useHeatmap } from "@/hooks/useHeatmap";
 import { useStreetRisk } from "@/hooks/useStreetRisk";
+import { useNearbyAlerts } from "@/hooks/useNearbyAlerts";
 import { getRouteBounds, getRouteOptions, type RouteKind } from "@/lib/mockRoute";
 import { hexRiskToFeatureCollection } from "@/lib/mockHeatmap";
 import { DestinationSearchBar } from "@/components/DestinationSearchBar";
 import { RouteInfoCard } from "@/components/RouteInfoCard";
 import { StatusBanner, type BannerVariant } from "@/components/StatusBanner";
+import { AlertBanner } from "@/components/AlertBanner";
 import type { GeocodingResult } from "@/lib/geocoding";
 import type { LngLat } from "@/lib/types";
 
@@ -53,6 +55,14 @@ const destinationPinStyle = {
   circleRadius: 8,
   circleColor: "#E5484D",
   circleStrokeWidth: 3,
+  circleStrokeColor: "#fff",
+} as const;
+
+// Item 5: where a nearby danger was reported (orange dot under the alert card).
+const alertMarkerStyle = {
+  circleRadius: 7,
+  circleColor: "#E8890C",
+  circleStrokeWidth: 2,
   circleStrokeColor: "#fff",
 } as const;
 
@@ -104,9 +114,20 @@ export default function Index() {
   } = useHeatmap();
   const [showHeatmap, setShowHeatmap] = useState(true);
 
-  // Item 6: refresh the heatmap when returning from the report modal, so a
-  // just-submitted report shows up. Skip the initial focus — the hook already
-  // fetches on mount.
+  // Route origin: the user's real position when we have one, else the Chicago
+  // demo center (backend graph only covers Chicago anyway).
+  const origin = userCoordinate ?? CHICAGO;
+
+  // Item 5 (sprint 2): proactive alerts for dangers reported near the user.
+  const {
+    alerts,
+    dismiss: dismissAlert,
+    refetch: refetchAlerts,
+  } = useNearbyAlerts(origin);
+
+  // Item 6: refresh the heatmap + alerts when returning from the report modal,
+  // so a just-submitted report (and its dispatched alert) shows up. Skip the
+  // initial focus — the hooks already fetch on mount.
   const isFirstFocus = useRef(true);
   useFocusEffect(
     useCallback(() => {
@@ -115,12 +136,9 @@ export default function Index() {
         return;
       }
       refetchHeatmap();
-    }, [refetchHeatmap])
+      refetchAlerts();
+    }, [refetchHeatmap, refetchAlerts])
   );
-
-  // Route origin: the user's real position when we have one, else the Chicago
-  // demo center (backend graph only covers Chicago anyway).
-  const origin = userCoordinate ?? CHICAGO;
 
   // Item 3: the route flow now waits for a destination — the hook stays idle
   // until the user picks one (search or map tap).
@@ -264,6 +282,26 @@ export default function Index() {
             </ShapeSource>
           ))}
 
+        {/* Item 5: reported-danger locations for the active alerts. */}
+        {alerts.length > 0 ? (
+          <ShapeSource
+            id="alertSource"
+            shape={{
+              type: "FeatureCollection",
+              features: alerts.map((alert) => ({
+                type: "Feature",
+                properties: {},
+                geometry: {
+                  type: "Point",
+                  coordinates: [alert.longitude, alert.latitude],
+                },
+              })),
+            }}
+          >
+            <CircleLayer id="alertMarkers" style={alertMarkerStyle} />
+          </ShapeSource>
+        ) : null}
+
         {/* Destination pin (red dot with white ring). */}
         {destination ? (
           <ShapeSource
@@ -281,6 +319,9 @@ export default function Index() {
 
       {/* Floating destination search (Mapbox Geocoding, client-side). */}
       <DestinationSearchBar proximity={origin} onSelect={handleSearchSelect} />
+
+      {/* Item 5: proactive nearby-danger alert (community alert system). */}
+      <AlertBanner alerts={alerts} onDismiss={dismissAlert} />
 
       {/* Heatmap visibility toggle. */}
       <Pressable

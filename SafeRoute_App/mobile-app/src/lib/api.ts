@@ -2,6 +2,7 @@ import axios, { AxiosError } from "axios";
 import type {
   HexRisk,
   LngLat,
+  NearbyAlert,
   ReportRequest,
   ReportResponse,
   RouteRequest,
@@ -11,6 +12,7 @@ import type {
 import { buildMockRouteResponse } from "./mockRoute";
 import { addMockReportedHex, getMockHexRisk } from "./mockHeatmap";
 import { buildMockStreetRisk } from "./mockStreetRisk";
+import { addMockDispatchedAlert, getMockNearbyAlerts } from "./mockAlerts";
 
 /**
  * Mock flags. Route/heatmap/report went LIVE against Seymen's backend
@@ -31,6 +33,13 @@ const USE_MOCK_REPORT = false;
  * (suggested route: POST /api/v1/street-risk-explanation).
  */
 const USE_MOCK_STREET_RISK = true;
+
+/**
+ * Still mock: the alert_dispatcher service (report → nearby-user alerts) is
+ * NOT exposed over HTTP yet. TODO(osman): flip when Seymen wires it
+ * (suggested route: GET /api/v1/alerts/nearby?lat=..&lng=..&radius=..).
+ */
+const USE_MOCK_ALERTS = true;
 
 /**
  * Backend base URL. Set EXPO_PUBLIC_API_BASE_URL in .env to your teammate's
@@ -206,14 +215,59 @@ export async function submitReport(
     const delay = report.priority === "urgent" ? 350 : 600;
     await new Promise((resolve) => setTimeout(resolve, delay));
     addMockReportedHex(report.lng, report.lat);
+    if (USE_MOCK_ALERTS) {
+      addMockDispatchedAlert(
+        report.lng,
+        report.lat,
+        report.priority === "urgent"
+      );
+    }
     return { ok: true, id: `mock-${Date.now()}` };
   }
 
   try {
     const response = await api.post<ReportResponse>("/api/v1/report", report);
+    // Item 5, mock-only side effect: while the alert endpoint doesn't exist,
+    // mimic the server-side dispatcher so "report → nearby alert" is demoable
+    // even against the live backend. Removed when USE_MOCK_ALERTS flips.
+    if (USE_MOCK_ALERTS && response.data?.ok) {
+      addMockDispatchedAlert(
+        report.lng,
+        report.lat,
+        report.priority === "urgent"
+      );
+    }
     return response.data;
   } catch (error) {
     logRequestError("submitReport (POST /api/v1/report)", error);
+    return null;
+  }
+}
+
+/**
+ * Fetches active danger alerts near the user (item 5). Mirrors the backend's
+ * alert_dispatcher output (AlertMessage schema); until that service gets an
+ * HTTP endpoint this resolves from the local mock. Returns null on failure —
+ * never throws, so the alert UI can simply stay hidden.
+ */
+export async function getNearbyAlerts(
+  location: LngLat
+): Promise<NearbyAlert[] | null> {
+  if (USE_MOCK_ALERTS) {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    return getMockNearbyAlerts(location);
+  }
+
+  try {
+    // TODO(osman): route TBD — align with Seymen when the dispatcher endpoint
+    // lands (suggested: GET /api/v1/alerts/nearby?lat&lng&radius).
+    const [lng, lat] = location;
+    const response = await api.get<NearbyAlert[]>("/api/v1/alerts/nearby", {
+      params: { lat, lng, radius: 500 },
+    });
+    return response.data;
+  } catch (error) {
+    logRequestError("getNearbyAlerts (GET /api/v1/alerts/nearby)", error);
     return null;
   }
 }
