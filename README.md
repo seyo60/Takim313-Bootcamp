@@ -228,6 +228,8 @@ Sprint 2 aşamasında ürün stratejisini netleştirmek adına ilgili dokümanta
 
 - **Sprint 2 Notion Panosu (Genel Görünüm ve Biten İşler):**
   [Product Backlog](https://app.notion.com/p/takim313/394780ef363a8083b92feb12eef90a2f?v=c0f780ef363a82ebae3c089f7788f93f&source=copy_link)
+  <img width="1583" height="980" alt="image" src="https://github.com/user-attachments/assets/28d55439-7ee1-4230-8c2d-9e8e72780fcb" />
+
 
 </details>
 
