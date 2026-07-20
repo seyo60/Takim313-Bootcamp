@@ -15,6 +15,34 @@
 
 import type { RiskLevel, StreetRiskExplanation } from "./types";
 
+/**
+ * The exact safe answer the backend's guardrails return when the LLM output
+ * violates the rules or there is not enough data (guardrails.py →
+ * get_fallback_street_response). Mirrored verbatim so the UI's
+ * insufficient-data detection works identically in mock and live modes.
+ */
+export function buildGuardrailFallback(): StreetRiskExplanation {
+  return {
+    summary:
+      "Bu bölge için yeterli güvenlik verisi bulunmuyor. Çevrenize dikkat edin.",
+    risk_level: "medium",
+    factors: ["sınırlı veri"],
+  };
+}
+
+/**
+ * True when the explanation is the guardrails' safe fallback rather than a
+ * real analysis (item 6): the "sınırlı veri" factor is the backend's marker.
+ * Shown as a neutral info card instead of a confident risk badge.
+ */
+export function isInsufficientData(
+  explanation: StreetRiskExplanation
+): boolean {
+  return explanation.factors.some(
+    (factor) => factor.trim().toLowerCase() === "sınırlı veri"
+  );
+}
+
 /** Maps a 0-100 total risk score to the badge level (thresholds are a UI choice). */
 export function riskLevelFromScore(score: number): RiskLevel {
   if (score <= 25) return "low";

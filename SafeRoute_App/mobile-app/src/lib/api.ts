@@ -11,7 +11,10 @@ import type {
 } from "./types";
 import { buildMockRouteResponse } from "./mockRoute";
 import { addMockReportedHex, getMockHexRisk } from "./mockHeatmap";
-import { buildMockStreetRisk } from "./mockStreetRisk";
+import {
+  buildGuardrailFallback,
+  buildMockStreetRisk,
+} from "./mockStreetRisk";
 import { addMockDispatchedAlert, getMockNearbyAlerts } from "./mockAlerts";
 
 /**
@@ -293,7 +296,12 @@ export async function getStreetRiskExplanation(
 ): Promise<StreetRiskExplanation | null> {
   if (USE_MOCK_STREET_RISK) {
     await new Promise((resolve) => setTimeout(resolve, 500));
-    return buildMockStreetRisk(riskScore ?? 45);
+    // No risk data (e.g. the shortest route) → same safe answer the backend's
+    // guardrails produce for insufficient data (item 6). With data, a normal
+    // synthesized analysis.
+    return riskScore === null
+      ? buildGuardrailFallback()
+      : buildMockStreetRisk(riskScore);
   }
 
   try {
