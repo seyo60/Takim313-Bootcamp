@@ -13,24 +13,22 @@ import { addMockReportedHex, getMockHexRisk } from "./mockHeatmap";
 import { buildMockStreetRisk } from "./mockStreetRisk";
 
 /**
- * While the backend endpoints are not live yet, API calls below return local
- * mock data (shaped exactly like src/lib/types.ts). Flip to false once
- * Seymen's backend is reachable — nothing else needs to change.
+ * Mock flags. Route/heatmap/report went LIVE against Seymen's backend
+ * (backend/main.py — contracts verified field-by-field). Set a flag back to
+ * true to demo without a running backend; nothing else needs to change.
  *
- * TODO(osman): set to false when POST /api/v1/route is live (§A in end-to-end.md).
+ * Requires EXPO_PUBLIC_API_BASE_URL in .env pointing at the FastAPI server.
  */
-const USE_MOCK_ROUTE = true;
+const USE_MOCK_ROUTE = false;
 
-/** TODO(osman): set to false when GET /api/v1/heatmap is live (§B). */
-const USE_MOCK_HEATMAP = true;
+const USE_MOCK_HEATMAP = false;
 
-/** TODO(osman): set to false when POST /api/v1/report is live (§C). */
-const USE_MOCK_REPORT = true;
+const USE_MOCK_REPORT = false;
 
 /**
- * TODO(osman): set to false when POST /api/v1/street-risk-explanation is live
- * (§D). Note: develop already has a live LLM module — coordinate with Seymen on
- * the exact route + payload before flipping this.
+ * Still mock: the backend's street_explainer service is NOT exposed over HTTP
+ * yet (no endpoint in main.py). TODO(osman): flip when Seymen wires it
+ * (suggested route: POST /api/v1/street-risk-explanation).
  */
 const USE_MOCK_STREET_RISK = true;
 
@@ -95,49 +93,73 @@ function logRequestError(context: string, error: unknown): void {
   }
 }
 
+/** Result of getRoute: the route, or a human-readable failure reason. */
+export interface RouteFetchResult {
+  route: RouteResponse | null;
+  /**
+   * Backend's explanatory 4xx detail when available (e.g. the coordinates are
+   * outside Chicago's service area) — shown to the user instead of a generic
+   * "backend unreachable" message. Null for network/5xx failures.
+   */
+  errorDetail: string | null;
+}
+
 /**
  * Fetches the safest route between two coordinates from the backend
- * (POST /api/v1/route). Returns the parsed response on success, or null on any
- * failure — never throws, so callers/UI don't need try/catch just to render.
+ * (POST /api/v1/route — CONFIRMED contract: {start, end, hour?} with [lng,lat]
+ * arrays). Never throws; on failure `route` is null and `errorDetail` may
+ * carry the backend's message (Chicago-bounds rejections are HTTP 400 with a
+ * user-appropriate Turkish detail).
  *
- * While USE_MOCK_ROUTE is true, resolves with local mock data instead of
- * hitting the network (same RouteResponse shape).
+ * While USE_MOCK_ROUTE is true, resolves with local mock data instead.
  */
 export async function getRoute(
   start: LngLat,
   end: LngLat
-): Promise<RouteResponse | null> {
+): Promise<RouteFetchResult> {
   if (USE_MOCK_ROUTE) {
     // Small delay so loading states are visible/testable in the UI.
     await new Promise((resolve) => setTimeout(resolve, 400));
-    return buildMockRouteResponse(start, end);
+    return { route: buildMockRouteResponse(start, end), errorDetail: null };
   }
 
   try {
-    // TODO(osman): body field names pending §A (start/end arrays vs
-    // start_lat/start_lng) — adjust here + types.ts if Seymen picks otherwise.
-    // We send the device's local hour so risk matches the time of day; drop it
-    // if the backend decides to derive the hour server-side.
+    // Local hour rides along so risk can match the time of day (accepted by
+    // the backend now, used in the risk formula in Faz 2).
     const body: RouteRequest = { start, end, hour: new Date().getHours() };
     const response = await api.post<RouteResponse>("/api/v1/route", body);
-    return response.data;
+    return { route: response.data, errorDetail: null };
   } catch (error) {
     logRequestError("getRoute (POST /api/v1/route)", error);
-    return null;
+    // Surface the backend's 4xx explanation (e.g. out of service area).
+    if (axios.isAxiosError(error) && error.response) {
+      const status = error.response.status;
+      const detail = (error.response.data as { detail?: unknown })?.detail;
+      if (status >= 400 && status < 500 && typeof detail === "string") {
+        return { route: null, errorDetail: detail };
+      }
+    }
+    return { route: null, errorDetail: null };
   }
+}
+
+/** Wire shape of GET /api/v1/heatmap — CONFIRMED flat array (main.py HeatmapPoint). */
+interface BackendHeatmapPoint {
+  lat: number;
+  lng: number;
+  total_risk: number;
 }
 
 /**
  * Fetches the hexagon-risk cells for the heatmap layer (GET /api/v1/heatmap).
- * Each cell is one H3 hexagon scored by the XGBoost batch prediction. Returns
- * null on failure — never throws.
+ * The backend keeps H3 indexing server-side and returns {lat, lng, total_risk}
+ * per cell centroid; we map total_risk → risk_score here so the rest of the
+ * app only knows the HexRisk shape. Returns null on failure — never throws.
  *
  * While USE_MOCK_HEATMAP is true, resolves with a local mock hexagon grid.
  *
- * TODO(osman): §B pending — response may be a GeoJSON FeatureCollection
- * instead of a flat array; adjust the parsing here (only here) if so.
  * TODO(osman): if the full-city payload turns out too heavy, switch to
- * GET /api/v1/heatmap/nearby with the user's location + radius.
+ * GET /api/v1/heatmap/nearby (already live) with the user's location + radius.
  */
 export async function getHeatmap(): Promise<HexRisk[] | null> {
   if (USE_MOCK_HEATMAP) {
@@ -146,8 +168,12 @@ export async function getHeatmap(): Promise<HexRisk[] | null> {
   }
 
   try {
-    const response = await api.get<HexRisk[]>("/api/v1/heatmap");
-    return response.data;
+    const response = await api.get<BackendHeatmapPoint[]>("/api/v1/heatmap");
+    return response.data.map((point) => ({
+      lat: point.lat,
+      lng: point.lng,
+      risk_score: point.total_risk,
+    }));
   } catch (error) {
     logRequestError("getHeatmap (GET /api/v1/heatmap)", error);
     return null;
@@ -163,13 +189,14 @@ export async function getHeatmap(): Promise<HexRisk[] | null> {
  * mimicking what the backend pipeline will eventually do, so the
  * "report → new hot spot on the heatmap" flow is demoable today.
  *
- * The optional `priority` field ("urgent") rides along in the body. If the
- * backend doesn't support it yet, it's harmlessly ignored server-side; in mock
- * mode we simulate acceptance (item 4, AC #3).
+ * CONFIRMED contract (main.py): {text, lat, lng} → HTTP 201 {ok, id}. The
+ * report is analyzed by the LLM in a background task and the heatmap risk is
+ * updated server-side — refetching the heatmap after a report shows the new
+ * hot spot for real now.
  *
- * TODO(osman): §C pending — confirm body field names, whether `priority` is
- * honored, and that the response is acknowledgement-only; if analysis comes
- * back synchronously, surface it in the report screen.
+ * The optional `priority` field ("urgent") rides along in the body; the
+ * backend's pydantic model ignores unknown fields, so it's harmless until
+ * supported. TODO(osman): ask Seymen to persist priority for urgent alerts.
  */
 export async function submitReport(
   report: ReportRequest
@@ -202,16 +229,17 @@ export async function submitReport(
  *
  * @param location  representative point on the route being explained.
  * @param riskScore the route's 0-100 risk score — a MOCK-ONLY hint used to
- *   pick the level/text. The real backend derives risk from the location and
- *   ignores this; kept in the signature so mock mode has interesting output.
+ *   pick the level/text. Null when unknown (e.g. the shortest route, whose
+ *   risk the backend doesn't report); the real backend derives risk from the
+ *   location anyway, and the mock falls back to a mid-level answer.
  */
 export async function getStreetRiskExplanation(
   location: LngLat,
-  riskScore: number
+  riskScore: number | null
 ): Promise<StreetRiskExplanation | null> {
   if (USE_MOCK_STREET_RISK) {
     await new Promise((resolve) => setTimeout(resolve, 500));
-    return buildMockStreetRisk(riskScore);
+    return buildMockStreetRisk(riskScore ?? 45);
   }
 
   try {

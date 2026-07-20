@@ -11,6 +11,11 @@ export type RouteStatus =
 export interface UseRouteResult {
   route: RouteResponse | null;
   status: RouteStatus;
+  /**
+   * Backend's explanatory message for a 4xx failure (e.g. destination outside
+   * Chicago's service area). Null for network/server failures.
+   */
+  errorDetail: string | null;
   /** Re-runs the failed request (item 7 "Tekrar dene"). */
   retry: () => void;
 }
@@ -30,6 +35,7 @@ export function useRoute(
   const [result, setResult] = useState<Omit<UseRouteResult, "retry">>({
     route: null,
     status: "idle",
+    errorDetail: null,
   });
   // Bumping this re-runs the fetch effect with the same coordinates.
   const [nonce, setNonce] = useState(0);
@@ -48,20 +54,23 @@ export function useRoute(
       endLng === undefined ||
       endLat === undefined
     ) {
-      setResult({ route: null, status: "idle" });
+      setResult({ route: null, status: "idle", errorDetail: null });
       return;
     }
 
     let cancelled = false;
-    setResult({ route: null, status: "loading" });
+    setResult({ route: null, status: "loading", errorDetail: null });
 
     (async () => {
-      const route = await getRoute([startLng, startLat], [endLng, endLat]);
+      const { route, errorDetail } = await getRoute(
+        [startLng, startLat],
+        [endLng, endLat]
+      );
       if (cancelled) return;
       setResult(
         route
-          ? { route, status: "ready" }
-          : { route: null, status: "error" }
+          ? { route, status: "ready", errorDetail: null }
+          : { route: null, status: "error", errorDetail }
       );
     })();
 

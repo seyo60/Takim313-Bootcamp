@@ -36,8 +36,12 @@ function formatDuration(seconds: number): string {
   return `${Math.max(1, Math.round(seconds / 60))} dk`;
 }
 
-/** Risk bucket → label + color. Thresholds are a UI choice, not a contract. */
-function riskInfo(score: number): { label: string; color: string } {
+/**
+ * Risk bucket → label + color. Thresholds are a UI choice, not a contract.
+ * Null = unknown (the backend doesn't report risk for the shortest route).
+ */
+function riskInfo(score: number | null): { label: string; color: string } {
+  if (score === null) return { label: "Risk bilinmiyor", color: "#8A8A8A" };
   if (score <= 33) return { label: "Düşük risk", color: "#2E9E44" };
   if (score <= 66) return { label: "Orta risk", color: "#E8890C" };
   return { label: "Yüksek risk", color: "#E5484D" };
@@ -124,7 +128,9 @@ export function RouteInfoCard({
 
           <View style={styles.stat}>
             <Text style={[styles.statValue, { color: risk.color }]}>
-              {Math.round(selected.risk_score)}
+              {selected.risk_score === null
+                ? "—"
+                : Math.round(selected.risk_score)}
             </Text>
             <Text style={[styles.statLabel, { color: risk.color }]}>
               {risk.label}

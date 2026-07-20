@@ -41,7 +41,10 @@ export function useStreetRisk(
   const lat = location?.[1];
 
   useEffect(() => {
-    if (lng === undefined || lat === undefined || riskScore === null) {
+    // Only the location gates the fetch: a null riskScore (e.g. the shortest
+    // route, whose risk the backend doesn't report) still gets an explanation —
+    // the backend derives risk from the location; the mock uses a mid default.
+    if (lng === undefined || lat === undefined) {
       setResult({ explanation: null, status: "idle" });
       return;
     }

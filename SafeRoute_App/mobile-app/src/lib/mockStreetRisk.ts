@@ -30,15 +30,15 @@ export function riskLevelFromScore(score: number): RiskLevel {
  */
 const CONTENT: Record<
   RiskLevel,
-  { explanation: string; factors: string[] }
+  { summary: string; factors: string[] }
 > = {
   low: {
-    explanation:
+    summary:
       "Bu rota büyük ölçüde güvenli. Aydınlatma iyi ve son dönemde kayda değer bir olay bildirilmemiş.",
     factors: ["İyi sokak aydınlatması", "Yoğun yaya trafiği"],
   },
   medium: {
-    explanation:
+    summary:
       "Bu rotada orta düzeyde risk var. Bazı kesimlerde aydınlatma zayıf ve akşam saatlerinde tenhalaşıyor.",
     factors: [
       "Kısmen zayıf aydınlatma",
@@ -47,7 +47,7 @@ const CONTENT: Record<
     ],
   },
   high: {
-    explanation:
+    summary:
       "Bu rota riskli sayılıyor. Son 3 ayda birden fazla olay bildirilmiş ve bazı sokaklar loş.",
     factors: [
       "Zayıf aydınlatma",
@@ -56,7 +56,7 @@ const CONTENT: Record<
     ],
   },
   critical: {
-    explanation:
+    summary:
       "Bu rota yüksek riskli. Yakın zamanda ciddi olaylar bildirilmiş; mümkünse güvenli rotayı tercih edin.",
     factors: [
       "Yakın zamanda saldırı bildirimi",
@@ -74,7 +74,7 @@ const CONTENT: Record<
 export function buildMockStreetRisk(totalRisk: number): StreetRiskExplanation {
   const total = Math.max(0, Math.min(100, Math.round(totalRisk)));
   const level = riskLevelFromScore(total);
-  const { explanation, factors } = CONTENT[level];
+  const { summary, factors } = CONTENT[level];
 
   // Distribute the total across channels (weights are illustrative only).
   const historical = Math.round(total * 0.6);
@@ -83,7 +83,7 @@ export function buildMockStreetRisk(totalRisk: number): StreetRiskExplanation {
 
   return {
     risk_level: level,
-    explanation,
+    summary,
     factors,
     channels: { historical, live, social, total },
   };

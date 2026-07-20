@@ -62,7 +62,8 @@ export function RiskExplanation({ explanation, status, onRetry }: Props) {
   const level = LEVEL_STYLE[explanation.risk_level];
   // Defensive clamp: keep to ≤3 factors even if the backend sends more (AC #3).
   const factors = explanation.factors.slice(0, 3);
-  const { historical, live, social } = explanation.channels;
+  // Channel breakdown is mock/demo-only — the backend response omits it.
+  const channels = explanation.channels ?? null;
 
   return (
     <View style={styles.section}>
@@ -72,7 +73,7 @@ export function RiskExplanation({ explanation, status, onRetry }: Props) {
         </Text>
       </View>
 
-      <Text style={styles.explanation}>{explanation.explanation}</Text>
+      <Text style={styles.explanation}>{explanation.summary}</Text>
 
       {factors.length > 0 ? (
         <View style={styles.factors}>
@@ -85,12 +86,14 @@ export function RiskExplanation({ explanation, status, onRetry }: Props) {
         </View>
       ) : null}
 
-      {/* Channel breakdown (historical / live / social) from the mock JSON. */}
-      <View style={styles.channels}>
-        <ChannelStat label="Geçmiş" value={historical} />
-        <ChannelStat label="Canlı" value={live} />
-        <ChannelStat label="Sosyal" value={social} />
-      </View>
+      {/* Channel breakdown — only when provided (mock/demo; backend omits it). */}
+      {channels ? (
+        <View style={styles.channels}>
+          <ChannelStat label="Geçmiş" value={channels.historical} />
+          <ChannelStat label="Canlı" value={channels.live} />
+          <ChannelStat label="Sosyal" value={channels.social} />
+        </View>
+      ) : null}
     </View>
   );
 }

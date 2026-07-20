@@ -25,28 +25,13 @@ export interface RouteRequest {
 }
 
 /**
- * The plain shortest route returned alongside the safe one, for the
- * "shortest vs safest" comparison + selection toggle (item 1 / item 8). It
- * carries its own stats so the detail panel can show the *selected* route's
- * numbers, not just the safe route's.
+ * Response of POST /api/v1/route — CONFIRMED against backend/main.py
+ * (RouteResponse pydantic model). `risk_score` is 0 (safe) – 100 (dangerous);
+ * the backend inverts its internal safety_score for us.
  *
- * TODO(osman): pending §A — confirm the backend returns these per-route stats
- * (distance/duration/risk) for `shortest`, not just its geometry.
- */
-export interface ShortestRoute {
-  /** The shortest route as a GeoJSON LineString ([lng, lat] pairs). */
-  route: GeoJSON.LineString;
-  distance_m: number;
-  duration_s: number;
-  /** Risk along this route, 0 (safe) – 100 (dangerous). */
-  risk_score: number;
-}
-
-/**
- * Response of POST /api/v1/route.
- *
- * TODO(osman): pending §A decisions — is `risk_score` an average or a total?
- * Will `shortest` be included for comparison (item 1 / item 8)?
+ * `shortest` is a bare LineString: the backend does NOT return per-route stats
+ * for it. The UI derives shortest distance/duration client-side from the
+ * geometry (see getRouteOptions) and shows its risk as unknown.
  */
 export interface RouteResponse {
   /** The safe route as a GeoJSON LineString ([lng, lat] pairs). */
@@ -55,27 +40,25 @@ export interface RouteResponse {
   duration_s: number;
   /** Risk along the route, 0 (safe) – 100 (dangerous). */
   risk_score: number;
-  /** Optional: plain shortest route (geometry + its own stats), for comparison. */
-  shortest?: ShortestRoute;
+  /** Plain shortest route for comparison (geometry only, no stats). */
+  shortest?: GeoJSON.LineString;
 }
 
 /**
- * One H3 hexagon cell's risk from GET /api/v1/heatmap. The backend's XGBoost
- * batch prediction scores each H3 cell; `lat`/`lng` are the cell centroid and
- * `risk_score` is 0 (safe) – 100 (dangerous). Rendered as the risk heatmap
- * (item 3).
+ * One H3 hexagon cell's risk for the heatmap layer (item 3).
  *
- * TODO(osman): pending §B — confirm exact field names (`h3_index` vs `cell`,
- * `risk_score` vs `total_risk`) and whether the payload is a flat array or a
- * GeoJSON FeatureCollection; if so, adjust the parsing in getHeatmap() only.
+ * CONFIRMED: the backend's GET /api/v1/heatmap returns a flat array of
+ * `{ lat, lng, total_risk }` — the H3 index stays server-side and the field
+ * is named `total_risk`. getHeatmap() maps that wire shape into this UI shape
+ * (total_risk → risk_score); nothing outside api.ts needs to know.
  */
 export interface HexRisk {
-  /** H3 cell index (resolution ~9). */
-  h3_index: string;
+  /** H3 cell index — not exposed by the backend endpoint; mock-only. */
+  h3_index?: string;
   /** Cell centroid, [longitude, latitude] split into lat/lng. */
   lat: number;
   lng: number;
-  /** Batch-predicted risk for the cell, 0-100. */
+  /** Risk for the cell, 0-100 (wire name: total_risk). */
   risk_score: number;
 }
 
@@ -137,19 +120,25 @@ export interface RiskChannels {
 }
 
 /**
- * Response of the LLM street-risk explanation endpoint
- * (POST /api/v1/street-risk-explanation). The backend runs the LLM over the
- * risk channels and returns a short, human-readable rationale.
+ * LLM street-risk explanation (item 2). Field names follow the backend's
+ * llm_integration/schemas/types.py `StreetExplanation` model
+ * (`summary` / `risk_level` / `factors`), so wiring the real endpoint later
+ * is a parse-free swap.
  *
- * TODO(osman): pending §D — confirm field names + that the text is
- * pre-truncated (≤2 sentences) server-side or if the UI must clamp it.
+ * TODO(osman): the backend service (street_explainer.py) exists but is NOT
+ * exposed as an HTTP endpoint yet — ask Seymen for the route (suggested:
+ * POST /api/v1/street-risk-explanation). Until then USE_MOCK_STREET_RISK
+ * stays true in api.ts.
  */
 export interface StreetRiskExplanation {
   risk_level: RiskLevel;
-  /** ≤2 sentence Turkish rationale for why the street/route is risky. */
-  explanation: string;
+  /** ≤2 sentence Turkish rationale (backend field name: summary). */
+  summary: string;
   /** Up to 3 concrete risk factors (e.g. "Zayıf aydınlatma"). */
   factors: string[];
-  /** Per-channel breakdown (historical/live/social/total). */
-  channels: RiskChannels;
+  /**
+   * Per-channel breakdown (historical/live/social/total). The backend's
+   * response schema does not include it — optional, mock/demo only.
+   */
+  channels?: RiskChannels;
 }

@@ -29,7 +29,11 @@ export interface RouteOption {
   geometry: GeoJSON.LineString;
   distance_m: number;
   duration_s: number;
-  risk_score: number;
+  /**
+   * 0-100 risk, or null when unknown — the backend reports risk only for the
+   * safe route; the shortest route's risk is not computed server-side.
+   */
+  risk_score: number | null;
 }
 
 /** Ordered points that make up the mock route line. */
@@ -80,20 +84,35 @@ export function buildMockRouteResponse(
     duration_s: 1020, // ~17 min walk
     risk_score: 24, // fairly safe demo value
     // The direct-but-riskier alternative, for the comparison + toggle (item 1).
-    // It's shorter/faster than the safe route but carries a higher risk score —
-    // that trade-off is the whole point the user weighs.
-    // TODO(osman): §A — if the backend ends up not returning `shortest`,
-    // the UI already handles its absence (comparison simply not shown).
+    // Matches the CONFIRMED backend shape: a bare LineString, no per-route
+    // stats — the UI derives distance/duration from the geometry.
     shortest: {
-      route: {
-        type: "LineString",
-        coordinates: MOCK_SHORTEST_COORDINATES,
-      },
-      distance_m: 1120, // shorter than the safe route (1350 m)
-      duration_s: 840, // ~14 min walk (vs ~17 min)
-      risk_score: 58, // riskier than the safe route (24)
+      type: "LineString",
+      coordinates: MOCK_SHORTEST_COORDINATES,
     },
   };
+}
+
+/** Average walking speed used by the backend for duration (m/s). */
+const WALKING_SPEED_MPS = 1.2;
+
+/** Haversine length of a coordinate path, in meters. */
+function pathLengthMeters(coordinates: LngLat[]): number {
+  const R = 6_371_000;
+  let total = 0;
+  for (let i = 1; i < coordinates.length; i++) {
+    const [lng1, lat1] = coordinates[i - 1];
+    const [lng2, lat2] = coordinates[i];
+    const phi1 = (lat1 * Math.PI) / 180;
+    const phi2 = (lat2 * Math.PI) / 180;
+    const dPhi = ((lat2 - lat1) * Math.PI) / 180;
+    const dLambda = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dPhi / 2) ** 2 +
+      Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLambda / 2) ** 2;
+    total += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+  return total;
 }
 
 /**
@@ -116,13 +135,19 @@ export function getRouteOptions(response: RouteResponse): RouteOption[] {
   ];
 
   if (response.shortest) {
+    // The backend sends only the geometry for the shortest route — derive
+    // distance from it (haversine) and duration with the backend's own
+    // walking-speed formula. Risk stays unknown (null → "—" in the panel).
+    const distance = pathLengthMeters(
+      response.shortest.coordinates as LngLat[]
+    );
     options.push({
       kind: "shortest",
       label: "En kısa",
-      geometry: response.shortest.route,
-      distance_m: response.shortest.distance_m,
-      duration_s: response.shortest.duration_s,
-      risk_score: response.shortest.risk_score,
+      geometry: response.shortest,
+      distance_m: distance,
+      duration_s: distance / WALKING_SPEED_MPS,
+      risk_score: null,
     });
   }
 

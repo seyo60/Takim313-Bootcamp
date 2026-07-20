@@ -127,6 +127,7 @@ export default function Index() {
   const {
     route,
     status,
+    errorDetail: routeErrorDetail,
     retry: retryRoute,
   } = useRoute(destination ? origin : null, destination);
 
@@ -191,7 +192,9 @@ export default function Index() {
     status === "error"
       ? {
           variant: "error",
-          text: "Rota alınamadı — backend'e ulaşılamıyor.",
+          // Prefer the backend's own explanation (e.g. "servis alanı dışında")
+          // over the generic unreachable message.
+          text: routeErrorDetail ?? "Rota alınamadı — backend'e ulaşılamıyor.",
           onRetry: retryRoute,
         }
       : status === "loading"
