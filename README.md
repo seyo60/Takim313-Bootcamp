@@ -123,7 +123,7 @@ Takım içi iletişimimizi çevik (agile) prensiplere uygun olarak WhatsApp ve M
 </details>
 
 <details>
-<summary><strong>📊 Proje Yönetimi (Project Management)</strong></summary>
+<summary><strong>📊 Sprint Board Updates </strong></summary>
 
 <br>
 
@@ -222,7 +222,7 @@ Sprint 2 aşamasında ürün stratejisini netleştirmek adına ilgili dokümanta
 </details>
 
 <details>
-<summary><strong>📊 Proje Yönetimi (Project Management)</strong></summary>
+<summary><strong>📊 Sprint Board Updates </strong></summary>
 
 <br>
 
