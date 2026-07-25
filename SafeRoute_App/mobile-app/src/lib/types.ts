@@ -106,9 +106,13 @@ export type RiskLevel = "low" | "medium" | "high" | "critical";
  * the backend's llm_integration/schemas/types.py `AlertMessage` model — the
  * alert_dispatcher service builds these after the LLM analyzes a report.
  *
- * TODO(osman): the dispatcher is not exposed over HTTP yet — ask Seymen for
- * the route (suggested: GET /api/v1/alerts/nearby?lat=..&lng=..&radius=..).
- * Until then USE_MOCK_ALERTS stays true in api.ts.
+ * Today these are derived client-side from the live GET /api/v1/heatmap/nearby
+ * risk points (see lib/nearbyAlerts.ts) because the dispatcher has no HTTP
+ * route yet. Because this type already matches `AlertMessage`, switching to the
+ * pushed alerts later is a source swap inside api.ts — the UI is untouched.
+ *
+ * TODO(osman): ask Seymen for GET /api/v1/alerts/nearby?lat=..&lng=..&radius=..
+ * so alerts carry the LLM's real category and summary text.
  */
 export interface NearbyAlert {
   alert_id: string;
@@ -120,8 +124,18 @@ export interface NearbyAlert {
   longitude: number;
   /** LLM-scored severity of the underlying report, 0-100. */
   risk_score: number;
-  /** violent | theft | harassment | suspicious | environmental | other */
+  /**
+   * violent | theft | harassment | suspicious | environmental | other, or
+   * "risk_zone" for the heatmap-derived alerts we build until the LLM
+   * dispatcher endpoint exists (it has no per-point category).
+   */
   category: string;
+  /**
+   * Meters between the user and the danger, computed on the client — the
+   * backend reports the location, not the distance. Drives the "120m uzakta"
+   * line on the card (item 5, AC #2).
+   */
+  distance_m?: number;
   /** ISO timestamp (wire) — kept as string on mobile. */
   created_at?: string;
   status?: "pending" | "sent" | "failed";

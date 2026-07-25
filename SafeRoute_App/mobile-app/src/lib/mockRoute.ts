@@ -12,7 +12,8 @@
  * Mapbox/GeoJSON coordinate order is [longitude, latitude].
  */
 
-import type { LngLat, RouteResponse } from "./types";
+import type { HexRisk, LngLat, RouteResponse } from "./types";
+import { distanceMeters } from "./nearbyAlerts";
 
 /** Which of the two routes the user is currently looking at. */
 export type RouteKind = "safe" | "shortest";
@@ -31,9 +32,16 @@ export interface RouteOption {
   duration_s: number;
   /**
    * 0-100 risk, or null when unknown — the backend reports risk only for the
-   * safe route; the shortest route's risk is not computed server-side.
+   * safe route; the shortest route's risk is not computed server-side, so we
+   * estimate it from the live heatmap cells instead (see scorePathRisk).
    */
   risk_score: number | null;
+  /**
+   * True when `risk_score` was derived on the client from heatmap cells rather
+   * than returned by the routing engine. The panel marks these as "tahmini" so
+   * an estimate is never presented as the backend's own number.
+   */
+  risk_estimated?: boolean;
 }
 
 /** Ordered points that make up the mock route line. */
@@ -115,14 +123,94 @@ function pathLengthMeters(coordinates: LngLat[]): number {
   return total;
 }
 
+/** A path vertex counts as "inside" a heatmap cell within this many meters. */
+const RISK_MATCH_RADIUS_M = 200;
+
+/**
+ * Cap on how many vertices we sample along a path. A city route can carry
+ * hundreds of vertices and the heatmap thousands of cells; sampling keeps this
+ * O(40 × candidates) instead of O(n × m) without changing the answer much,
+ * since consecutive vertices sit in the same cell anyway.
+ */
+const MAX_RISK_SAMPLES = 40;
+
+/**
+ * Estimates a 0-100 risk for a path from the live heatmap cells around it.
+ *
+ * Why this exists: the backend computes a risk score for the safe route only —
+ * `shortest` comes back as bare geometry (backend/main.py RouteResponse). That
+ * left the comparison panel showing "—" for the very route the user is being
+ * asked to compare against, which defeats the point of the toggle. The cells
+ * behind GET /api/v1/heatmap are the same risk data the routing engine weights
+ * its edges with, so sampling them along the path is a fair approximation.
+ *
+ * It is an approximation, not the engine's number — callers mark it
+ * `risk_estimated` so the UI can label it. Returns null when no cell is close
+ * enough to say anything, which keeps the honest "—" for that case.
+ */
+export function scorePathRisk(
+  coordinates: LngLat[],
+  hexes: HexRisk[]
+): number | null {
+  if (coordinates.length === 0 || hexes.length === 0) return null;
+
+  // Prefilter to the path's bounding box (+ the match radius) so the per-vertex
+  // scan only looks at cells that could possibly match. ~0.0018° ≈ 200m.
+  const pad = RISK_MATCH_RADIUS_M / 111_000;
+  const lngs = coordinates.map(([lng]) => lng);
+  const lats = coordinates.map(([, lat]) => lat);
+  const minLng = Math.min(...lngs) - pad;
+  const maxLng = Math.max(...lngs) + pad;
+  const minLat = Math.min(...lats) - pad;
+  const maxLat = Math.max(...lats) + pad;
+
+  const candidates = hexes.filter(
+    (hex) =>
+      hex.lng >= minLng &&
+      hex.lng <= maxLng &&
+      hex.lat >= minLat &&
+      hex.lat <= maxLat
+  );
+  if (candidates.length === 0) return null;
+
+  const step = Math.max(1, Math.ceil(coordinates.length / MAX_RISK_SAMPLES));
+  const scores: number[] = [];
+
+  for (let i = 0; i < coordinates.length; i += step) {
+    const [lng, lat] = coordinates[i];
+    let nearestRisk: number | null = null;
+    let nearestDistance = RISK_MATCH_RADIUS_M;
+
+    for (const hex of candidates) {
+      const distance = distanceMeters(lat, lng, hex.lat, hex.lng);
+      if (distance <= nearestDistance) {
+        nearestDistance = distance;
+        nearestRisk = hex.risk_score;
+      }
+    }
+
+    if (nearestRisk !== null) scores.push(nearestRisk);
+  }
+
+  if (scores.length === 0) return null;
+  const mean = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+  return Math.round(mean * 10) / 10;
+}
+
 /**
  * Flattens a RouteResponse into the list of routes the UI renders and toggles
  * between: always the safe route, plus the shortest one when present. Keeping
  * this in one place means the map layers, the camera fit and the detail panel
  * all read from the same normalized shape (item 1, AC #4) — swapping the mock
  * for the real backend never touches those components.
+ *
+ * @param hexes live heatmap cells, used to estimate the shortest route's risk
+ *   (the backend doesn't report one). Omit to keep that risk unknown.
  */
-export function getRouteOptions(response: RouteResponse): RouteOption[] {
+export function getRouteOptions(
+  response: RouteResponse,
+  hexes: HexRisk[] = []
+): RouteOption[] {
   const options: RouteOption[] = [
     {
       kind: "safe",
@@ -136,18 +224,19 @@ export function getRouteOptions(response: RouteResponse): RouteOption[] {
 
   if (response.shortest) {
     // The backend sends only the geometry for the shortest route — derive
-    // distance from it (haversine) and duration with the backend's own
-    // walking-speed formula. Risk stays unknown (null → "—" in the panel).
-    const distance = pathLengthMeters(
-      response.shortest.coordinates as LngLat[]
-    );
+    // distance from it (haversine), duration with the backend's own
+    // walking-speed formula, and risk from the heatmap cells along it.
+    const coordinates = response.shortest.coordinates as LngLat[];
+    const distance = pathLengthMeters(coordinates);
+    const estimatedRisk = scorePathRisk(coordinates, hexes);
     options.push({
       kind: "shortest",
       label: "En kısa",
       geometry: response.shortest,
       distance_m: distance,
       duration_s: distance / WALKING_SPEED_MPS,
-      risk_score: null,
+      risk_score: estimatedRisk,
+      risk_estimated: estimatedRisk !== null,
     });
   }
 

@@ -16,6 +16,7 @@ import {
   buildMockStreetRisk,
 } from "./mockStreetRisk";
 import { addMockDispatchedAlert, getMockNearbyAlerts } from "./mockAlerts";
+import { ALERT_RADIUS_METERS, riskPointsToAlerts } from "./nearbyAlerts";
 
 /**
  * Mock flags. Route/heatmap/report went LIVE against Seymen's backend
@@ -38,11 +39,12 @@ const USE_MOCK_REPORT = false;
 const USE_MOCK_STREET_RISK = true;
 
 /**
- * Still mock: the alert_dispatcher service (report → nearby-user alerts) is
- * NOT exposed over HTTP yet. TODO(osman): flip when Seymen wires it
- * (suggested route: GET /api/v1/alerts/nearby?lat=..&lng=..&radius=..).
+ * LIVE — but indirectly. The alert_dispatcher service still has no HTTP route,
+ * so nearby alerts are derived from the live GET /api/v1/heatmap/nearby risk
+ * points instead (see lib/nearbyAlerts.ts for why that's the same signal).
+ * Set to true to demo the alert UI without a backend.
  */
-const USE_MOCK_ALERTS = true;
+const USE_MOCK_ALERTS = false;
 
 /**
  * Backend base URL. Set EXPO_PUBLIC_API_BASE_URL in .env to your teammate's
@@ -192,6 +194,16 @@ export async function getHeatmap(): Promise<HexRisk[] | null> {
   }
 }
 
+/** Result of submitReport: the acknowledgement, or a human-readable reason. */
+export interface ReportSubmitResult {
+  response: ReportResponse | null;
+  /**
+   * Backend's explanatory 4xx detail when available (e.g. the report is
+   * outside Chicago's service area). Null for network/5xx failures.
+   */
+  errorDetail: string | null;
+}
+
 /**
  * Submits a danger report (POST /api/v1/report). The backend acknowledges and
  * analyzes the text in the background (LLM) — no risk score in the response.
@@ -212,7 +224,7 @@ export async function getHeatmap(): Promise<HexRisk[] | null> {
  */
 export async function submitReport(
   report: ReportRequest
-): Promise<ReportResponse | null> {
+): Promise<ReportSubmitResult> {
   if (USE_MOCK_REPORT) {
     // Urgent reports resolve faster to mimic a high-priority path.
     const delay = report.priority === "urgent" ? 350 : 600;
@@ -225,7 +237,10 @@ export async function submitReport(
         report.priority === "urgent"
       );
     }
-    return { ok: true, id: `mock-${Date.now()}` };
+    return {
+      response: { ok: true, id: `mock-${Date.now()}` },
+      errorDetail: null,
+    };
   }
 
   try {
@@ -240,18 +255,35 @@ export async function submitReport(
         report.priority === "urgent"
       );
     }
-    return response.data;
+    return { response: response.data, errorDetail: null };
   } catch (error) {
     logRequestError("submitReport (POST /api/v1/report)", error);
-    return null;
+    // The backend rejects out-of-area reports with an explanatory Turkish 400
+    // (main.py _ensure_within_chicago) — show that instead of "gönderilemedi".
+    if (axios.isAxiosError(error) && error.response) {
+      const status = error.response.status;
+      const detail = (error.response.data as { detail?: unknown })?.detail;
+      if (status >= 400 && status < 500 && typeof detail === "string") {
+        return { response: null, errorDetail: detail };
+      }
+    }
+    return { response: null, errorDetail: null };
   }
 }
 
 /**
- * Fetches active danger alerts near the user (item 5). Mirrors the backend's
- * alert_dispatcher output (AlertMessage schema); until that service gets an
- * HTTP endpoint this resolves from the local mock. Returns null on failure —
- * never throws, so the alert UI can simply stay hidden.
+ * Fetches active danger alerts near the user (item 5) from the LIVE
+ * GET /api/v1/heatmap/nearby endpoint: the risk points within
+ * ALERT_RADIUS_METERS of the user, keeping only the high/critical ones and
+ * shaping them into `NearbyAlert` cards (lib/nearbyAlerts.ts explains why the
+ * heatmap is the right source until the LLM dispatcher is exposed).
+ *
+ * Returns null on failure — never throws, so the alert UI can simply stay
+ * hidden rather than taking the map down with it.
+ *
+ * TODO(osman): when Seymen adds GET /api/v1/alerts/nearby, replace the request
+ * below with it and drop the riskPointsToAlerts() call — the response already
+ * matches `NearbyAlert`, so the UI does not change.
  */
 export async function getNearbyAlerts(
   location: LngLat
@@ -262,15 +294,19 @@ export async function getNearbyAlerts(
   }
 
   try {
-    // TODO(osman): route TBD — align with Seymen when the dispatcher endpoint
-    // lands (suggested: GET /api/v1/alerts/nearby?lat&lng&radius).
     const [lng, lat] = location;
-    const response = await api.get<NearbyAlert[]>("/api/v1/alerts/nearby", {
-      params: { lat, lng, radius: 500 },
-    });
-    return response.data;
+    const response = await api.get<BackendHeatmapPoint[]>(
+      "/api/v1/heatmap/nearby",
+      { params: { lat, lng, radius: ALERT_RADIUS_METERS } }
+    );
+    const points: HexRisk[] = response.data.map((point) => ({
+      lat: point.lat,
+      lng: point.lng,
+      risk_score: point.total_risk,
+    }));
+    return riskPointsToAlerts(points, location);
   } catch (error) {
-    logRequestError("getNearbyAlerts (GET /api/v1/alerts/nearby)", error);
+    logRequestError("getNearbyAlerts (GET /api/v1/heatmap/nearby)", error);
     return null;
   }
 }

@@ -1,11 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { formatDistance } from "@/lib/nearbyAlerts";
 import type { NearbyAlert } from "@/lib/types";
 
 interface Props {
-  /** Active nearby alerts, nearest first; the most relevant one is shown. */
+  /** Active nearby alerts, nearest first (the hook caps this at 3). */
   alerts: NearbyAlert[];
-  /** Dismisses the shown alert for the session. */
+  /** Dismisses one alert for the session. */
   onDismiss: (alertId: string) => void;
+  /** Centers the map on the alert's location (AC #3). */
+  onFocus: (alert: NearbyAlert) => void;
 }
 
 /** Severity color from the report's 0-100 risk score (same buckets as the LLM). */
@@ -27,59 +30,96 @@ function categoryIcon(category: string): string {
       return "⚠️";
     case "environmental":
       return "💡";
+    // Heatmap-derived alerts have no LLM category (see lib/nearbyAlerts.ts).
+    case "risk_zone":
+      return "🔺";
     default:
       return "👁️";
   }
 }
 
 /**
- * Proactive nearby-danger alert card (item 5): shown when the backend's
- * report-analysis pipeline dispatched an alert for something reported close
- * to the user. Renders the highest-priority (first) alert; a counter hints at
- * additional ones — dismissing reveals the next.
+ * Proactive nearby-danger alert stack (item 5): shown when a high or critical
+ * risk is active close to the user. Up to three cards, nearest at the top;
+ * tapping one flies the map to it, ✕ dismisses just that card.
  *
  * Sits under the search bar and never covers the right-hand button column.
  */
-export function AlertBanner({ alerts, onDismiss }: Props) {
-  const alert = alerts[0];
-  if (!alert) return null;
-
-  const color = severityColor(alert.risk_score);
-  const remaining = alerts.length - 1;
+export function AlertBanner({ alerts, onDismiss, onFocus }: Props) {
+  if (alerts.length === 0) return null;
 
   return (
-    <View style={[styles.card, { borderLeftColor: color }]}>
-      <Text style={styles.icon}>{categoryIcon(alert.category)}</Text>
+    <View style={styles.stack} pointerEvents="box-none">
+      {alerts.map((alert) => {
+        const color = severityColor(alert.risk_score);
 
-      <View style={styles.textColumn}>
-        <Text style={[styles.title, { color }]} numberOfLines={1}>
-          {alert.title}
-        </Text>
-        <Text style={styles.body} numberOfLines={2}>
-          {alert.body}
-        </Text>
-        {remaining > 0 ? (
-          <Text style={styles.more}>+{remaining} bildirim daha</Text>
-        ) : null}
-      </View>
+        return (
+          <Pressable
+            key={alert.alert_id}
+            onPress={() => onFocus(alert)}
+            accessibilityRole="button"
+            accessibilityLabel={`${alert.title}. ${alert.body} Haritada göstermek için dokunun.`}
+            style={({ pressed }) => [
+              styles.card,
+              { borderLeftColor: color },
+              pressed && styles.cardPressed,
+            ]}
+          >
+            <Text style={styles.icon}>{categoryIcon(alert.category)}</Text>
 
-      <Pressable
-        onPress={() => onDismiss(alert.alert_id)}
-        hitSlop={10}
-        style={({ pressed }) => [styles.close, pressed && styles.closePressed]}
-      >
-        <Text style={styles.closeText}>✕</Text>
-      </Pressable>
+            <View style={styles.textColumn}>
+              <View style={styles.headerRow}>
+                <Text style={[styles.title, { color }]} numberOfLines={1}>
+                  {alert.title}
+                </Text>
+                {/* AC #2: the numeric risk score, not just the accent color. */}
+                <View style={[styles.riskChip, { backgroundColor: color }]}>
+                  <Text style={styles.riskChipText}>
+                    {Math.round(alert.risk_score)}
+                  </Text>
+                </View>
+              </View>
+
+              {/* AC #2: how far away the danger is. */}
+              {alert.distance_m !== undefined ? (
+                <Text style={styles.distance}>
+                  {formatDistance(alert.distance_m)}
+                </Text>
+              ) : null}
+
+              <Text style={styles.body} numberOfLines={2}>
+                {alert.body}
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={() => onDismiss(alert.alert_id)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Bildirimi kapat"
+              style={({ pressed }) => [
+                styles.close,
+                pressed && styles.closePressed,
+              ]}
+            >
+              <Text style={styles.closeText}>✕</Text>
+            </Pressable>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  stack: {
     position: "absolute",
     top: 120,
     left: 16,
     right: 72, // leave the right-hand button column (heatmap/report) tappable
+    gap: 8,
+  },
+  card: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
@@ -95,26 +135,48 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 5,
   },
+  cardPressed: {
+    backgroundColor: "#F4F6F8",
+  },
   icon: {
     fontSize: 22,
   },
   textColumn: {
     flex: 1,
   },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   title: {
+    flex: 1,
     fontSize: 13,
     fontWeight: "700",
+  },
+  riskChip: {
+    minWidth: 26,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  riskChipText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  distance: {
+    marginTop: 1,
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#666",
   },
   body: {
     marginTop: 2,
     fontSize: 13,
     color: "#333",
     lineHeight: 18,
-  },
-  more: {
-    marginTop: 4,
-    fontSize: 11,
-    color: "#888",
   },
   close: {
     width: 26,

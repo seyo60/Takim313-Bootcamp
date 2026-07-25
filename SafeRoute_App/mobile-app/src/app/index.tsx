@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import Mapbox, {
@@ -23,7 +23,7 @@ import { RouteInfoCard } from "@/components/RouteInfoCard";
 import { StatusBanner, type BannerVariant } from "@/components/StatusBanner";
 import { AlertBanner } from "@/components/AlertBanner";
 import type { GeocodingResult } from "@/lib/geocoding";
-import type { LngLat } from "@/lib/types";
+import type { LngLat, NearbyAlert } from "@/lib/types";
 
 Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? "");
 
@@ -65,6 +65,10 @@ const alertMarkerStyle = {
   circleStrokeWidth: 2,
   circleStrokeColor: "#fff",
 } as const;
+
+// Item 5 (AC #3): how close the camera gets when the user taps an alert —
+// street level, so the marker and the surrounding blocks are both readable.
+const ALERT_FOCUS_ZOOM = 16;
 
 // Risk heatmap (item 3): weight scales with each H3 cell's risk_score (0-100);
 // the color ramp goes transparent → green → amber → orange → red as density
@@ -114,6 +118,14 @@ export default function Index() {
   } = useHeatmap();
   const [showHeatmap, setShowHeatmap] = useState(true);
 
+  // Item 3 (AC #2): build the GeoJSON once per data change. Inline in JSX it
+  // was re-serializing the whole city grid across the RN bridge on every
+  // unrelated re-render (route toggle, alert dismiss, location update).
+  const heatmapShape = useMemo(
+    () => hexRiskToFeatureCollection(riskHexes),
+    [riskHexes]
+  );
+
   // Route origin: the user's real position when we have one, else the Chicago
   // demo center (backend graph only covers Chicago anyway).
   const origin = userCoordinate ?? CHICAGO;
@@ -150,8 +162,13 @@ export default function Index() {
   } = useRoute(destination ? origin : null, destination);
 
   // Item 1: normalized list of routes to draw + toggle between (safe, and the
-  // shortest when present), plus which one is currently selected.
-  const routeOptions = route ? getRouteOptions(route) : [];
+  // shortest when present), plus which one is currently selected. The live
+  // heatmap cells ride along so the shortest route gets an estimated risk
+  // instead of "—" (the backend scores only the safe route).
+  const routeOptions = useMemo(
+    () => (route ? getRouteOptions(route, riskHexes) : []),
+    [route, riskHexes]
+  );
   const [selectedKind, setSelectedKind] = useState<RouteKind>("safe");
 
   // A freshly fetched route always starts on the safe option.
@@ -177,6 +194,20 @@ export default function Index() {
     status: explanationStatus,
     retry: retryExplanation,
   } = useStreetRisk(explainPoint, selectedOption?.risk_score ?? null);
+
+  // Item 5 (AC #3): tapping an alert card flies the map to the reported spot.
+  // Driven through the Camera ref rather than state so it's a one-shot move —
+  // the declarative Camera below keeps owning route framing and re-centering.
+  // `Camera` is exported as both the component and an alias for its ref type.
+  const cameraRef = useRef<Camera>(null);
+  const handleAlertFocus = useCallback((alert: NearbyAlert) => {
+    cameraRef.current?.setCamera({
+      centerCoordinate: [alert.longitude, alert.latitude],
+      zoomLevel: ALERT_FOCUS_ZOOM,
+      animationMode: "flyTo",
+      animationDuration: 900,
+    });
+  }, []);
 
   const handleSearchSelect = useCallback((result: GeocodingResult) => {
     setDestination(result.coordinate);
@@ -237,9 +268,10 @@ export default function Index() {
         onPress={handleMapPress}
       >
         {bounds ? (
-          <Camera bounds={bounds} animationDuration={800} />
+          <Camera ref={cameraRef} bounds={bounds} animationDuration={800} />
         ) : (
           <Camera
+            ref={cameraRef}
             zoomLevel={userCoordinate ? 14 : 11}
             centerCoordinate={origin}
             animationDuration={600}
@@ -248,10 +280,7 @@ export default function Index() {
 
         {/* Item 3: hexagon risk heatmap (green → red as risk rises). */}
         {showHeatmap && riskHexes.length > 0 ? (
-          <ShapeSource
-            id="heatmapSource"
-            shape={hexRiskToFeatureCollection(riskHexes)}
-          >
+          <ShapeSource id="heatmapSource" shape={heatmapShape}>
             <HeatmapLayer id="riskHeatmap" style={heatmapStyle} />
           </ShapeSource>
         ) : null}
@@ -320,8 +349,12 @@ export default function Index() {
       {/* Floating destination search (Mapbox Geocoding, client-side). */}
       <DestinationSearchBar proximity={origin} onSelect={handleSearchSelect} />
 
-      {/* Item 5: proactive nearby-danger alert (community alert system). */}
-      <AlertBanner alerts={alerts} onDismiss={dismissAlert} />
+      {/* Item 5: proactive nearby-danger alerts (community alert system). */}
+      <AlertBanner
+        alerts={alerts}
+        onDismiss={dismissAlert}
+        onFocus={handleAlertFocus}
+      />
 
       {/* Heatmap visibility toggle. */}
       <Pressable
@@ -340,7 +373,14 @@ export default function Index() {
         onPress={() =>
           router.push({
             pathname: "/report",
-            params: { lng: String(origin[0]), lat: String(origin[1]) },
+            params: {
+              lng: String(origin[0]),
+              lat: String(origin[1]),
+              // Tell the report screen whether these are a real fix or the
+              // Chicago fallback, so it can warn instead of silently filing
+              // an emergency report downtown.
+              precise: userCoordinate ? "1" : "0",
+            },
           })
         }
       >

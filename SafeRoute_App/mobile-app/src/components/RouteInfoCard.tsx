@@ -130,10 +130,14 @@ export function RouteInfoCard({
             <Text style={[styles.statValue, { color: risk.color }]}>
               {selected.risk_score === null
                 ? "—"
-                : Math.round(selected.risk_score)}
+                : // "~" marks a client-side estimate from the heatmap rather
+                  // than the routing engine's own score.
+                  `${selected.risk_estimated ? "~" : ""}${Math.round(
+                    selected.risk_score
+                  )}`}
             </Text>
             <Text style={[styles.statLabel, { color: risk.color }]}>
-              {risk.label}
+              {selected.risk_estimated ? `${risk.label} (tahmini)` : risk.label}
             </Text>
           </View>
         </View>

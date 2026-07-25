@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { submitReport } from "@/lib/api";
+import { getCurrentCoordinate } from "@/hooks/useUserLocation";
 import type { ReportPriority } from "@/lib/types";
 
 type SendState = "idle" | "sending" | "success" | "error";
@@ -36,19 +37,29 @@ const URGENT_HOLD_MS = 700;
  * automatically — the user never types it.
  */
 export default function Report() {
-  const { lng, lat } = useLocalSearchParams<{ lng?: string; lat?: string }>();
+  const { lng, lat, precise } = useLocalSearchParams<{
+    lng?: string;
+    lat?: string;
+    /** "1" when the map had a real GPS fix; "0" when it fell back to Chicago. */
+    precise?: string;
+  }>();
   const [text, setText] = useState("");
   const [state, setState] = useState<SendState>("idle");
   // Which path succeeded/failed, so the confirmation matches (AC #4).
   const [sentPriority, setSentPriority] = useState<ReportPriority>("normal");
   // Visual feedback while the URGENT button is being held down.
   const [holding, setHolding] = useState(false);
+  // Backend's own explanation when it rejects the report (e.g. out of area).
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   const trimmed = text.trim();
   const hasCoords = lng !== undefined && lat !== undefined;
   const busy = state === "sending" || state === "success";
   const canSendNormal =
     trimmed.length >= MIN_TEXT_LENGTH && hasCoords && !busy;
+  // The map only had the Chicago demo center when it opened this screen, so
+  // unless a fresh fix comes through at send time the report is approximate.
+  const approximateLocation = precise === "0";
 
   const send = async (priority: ReportPriority) => {
     if (!hasCoords || busy) return;
@@ -57,13 +68,20 @@ export default function Report() {
 
     setHolding(false);
     setSentPriority(priority);
+    setErrorDetail(null);
     setState("sending");
 
-    const response = await submitReport({
+    // AC #2: stamp the report with a fix taken NOW, not with whatever the map
+    // had when this screen opened — that may be the Chicago fallback, and an
+    // emergency filed at the wrong place is worse than no report at all.
+    const fresh = await getCurrentCoordinate();
+    const [sendLng, sendLat] = fresh ?? [Number(lng), Number(lat)];
+
+    const { response, errorDetail: detail } = await submitReport({
       // Urgent reports may carry no note — send a stand-in so the record isn't empty.
       text: trimmed.length > 0 ? trimmed : "🚨 Acil durum bildirimi (detay girilmedi)",
-      lng: Number(lng),
-      lat: Number(lat),
+      lng: sendLng,
+      lat: sendLat,
       priority,
     });
 
@@ -72,6 +90,7 @@ export default function Report() {
       // Brief confirmation, then back to the map (which refetches the heatmap).
       setTimeout(() => router.back(), 1400);
     } else {
+      setErrorDetail(detail);
       setState("error");
     }
   };
@@ -130,6 +149,16 @@ export default function Report() {
             Konumun otomatik eklenir. Not girmen zorunlu değil.
           </Text>
 
+          {/* Be explicit when we're about to file at the demo center rather
+              than at the user — sending takes a fresh fix first, but if that
+              also fails the report really is approximate. */}
+          {approximateLocation ? (
+            <Text style={styles.locationWarning}>
+              ⚠️ Kesin konumun alınamadı. Gönderirken tekrar denenecek; yine
+              alınamazsa bildirim yaklaşık konumla kaydedilir.
+            </Text>
+          ) : null}
+
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>veya detaylı bildir</Text>
@@ -154,7 +183,10 @@ export default function Report() {
 
           {state === "error" ? (
             <Text style={styles.error}>
-              Bildirim gönderilemedi — bağlantıyı kontrol edip tekrar dene.
+              {/* Prefer the backend's own reason (e.g. "servis alanı dışında")
+                  over the generic connection message. */}
+              {errorDetail ??
+                "Bildirim gönderilemedi — bağlantıyı kontrol edip tekrar dene."}
             </Text>
           ) : null}
 
@@ -236,6 +268,17 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
     color: "#888",
+    textAlign: "center",
+  },
+  locationWarning: {
+    marginTop: 8,
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#8A5A00",
+    backgroundColor: "#FFF4E0",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     textAlign: "center",
   },
   divider: {

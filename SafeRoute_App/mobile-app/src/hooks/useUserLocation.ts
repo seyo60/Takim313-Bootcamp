@@ -18,6 +18,42 @@ export interface UserLocation {
 }
 
 /**
+ * Reads a fresh position right now, without going through the hook.
+ *
+ * The danger report screen needs this: it receives the map's coordinates as
+ * route params, and those may be the Chicago demo fallback from when the screen
+ * mounted. Filing an emergency report at the wrong place is the one failure
+ * this feature cannot afford, so the report is stamped with a fix taken at send
+ * time and only falls back to the params if that fails.
+ *
+ * Never throws and never blocks for long: resolves null on denied permission,
+ * on error, or when the fix takes longer than `timeoutMs`.
+ */
+export async function getCurrentCoordinate(
+  timeoutMs = 4000
+): Promise<Coordinate | null> {
+  try {
+    // Don't re-prompt here — the map screen already asked. If it wasn't
+    // granted, fall back instead of blocking an urgent report on a dialog.
+    const { status } = await Location.getForegroundPermissionsAsync();
+    if (status !== Location.PermissionStatus.GRANTED) return null;
+
+    const position = await Promise.race([
+      Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
+
+    if (!position) return null;
+    return [position.coords.longitude, position.coords.latitude];
+  } catch (error) {
+    console.warn("[getCurrentCoordinate] Failed to get position:", error);
+    return null;
+  }
+}
+
+/**
  * Requests foreground location permission on mount and, once granted, reads the
  * device's current position. Never throws — on denial or failure it resolves to
  * a non-"granted" status with a message so the caller can fall back gracefully
