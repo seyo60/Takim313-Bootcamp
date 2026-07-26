@@ -12,7 +12,8 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { submitReport } from "@/lib/api";
 import { getCurrentCoordinate } from "@/hooks/useUserLocation";
-import type { ReportPriority } from "@/lib/types";
+import { EmergencyShortcuts } from "@/components/EmergencyShortcuts";
+import type { LngLat, ReportPriority } from "@/lib/types";
 
 type SendState = "idle" | "sending" | "success" | "error";
 
@@ -51,6 +52,8 @@ export default function Report() {
   const [holding, setHolding] = useState(false);
   // Backend's own explanation when it rejects the report (e.g. out of area).
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
+  // Coordinates the successful report was actually filed with (item #10).
+  const [sentAt, setSentAt] = useState<LngLat | null>(null);
 
   const trimmed = text.trim();
   const hasCoords = lng !== undefined && lat !== undefined;
@@ -86,9 +89,17 @@ export default function Report() {
     });
 
     if (response?.ok) {
+      // Remember where the report was filed — the emergency shortcuts measure
+      // from here, not from the possibly-stale route params.
+      setSentAt([sendLng, sendLat]);
       setState("success");
-      // Brief confirmation, then back to the map (which refetches the heatmap).
-      setTimeout(() => router.back(), 1400);
+      // A normal report just confirms and returns to the map (which refetches
+      // the heatmap). An urgent one stays put: it offers directions to the
+      // nearest police station / hospital, and yanking that away after 1.4s
+      // would be the exact moment the user needs it most (Backlog #10).
+      if (priority === "normal") {
+        setTimeout(() => router.back(), 1400);
+      }
     } else {
       setErrorDetail(detail);
       setState("error");
@@ -110,16 +121,33 @@ export default function Report() {
       </View>
 
       {state === "success" ? (
-        <Text
-          style={[
-            styles.success,
-            sentPriority === "urgent" && styles.successUrgent,
-          ]}
-        >
-          {sentPriority === "urgent"
-            ? "🚨 Acil durum bildirimin iletildi. Yakındaki kullanıcılar uyarılıyor."
-            : "✓ Bildirimin alındı. Teşekkürler!"}
-        </Text>
+        <View style={styles.successPane}>
+          <Text
+            style={[
+              styles.success,
+              sentPriority === "urgent" && styles.successUrgent,
+            ]}
+          >
+            {sentPriority === "urgent"
+              ? "🚨 Acil durum bildirimin iletildi. Yakındaki kullanıcılar uyarılıyor."
+              : "✓ Bildirimin alındı. Teşekkürler!"}
+          </Text>
+
+          {/* Backlog #10: after an urgent report, one tap to walking directions
+              for the nearest police station / hospital. */}
+          {sentPriority === "urgent" && sentAt ? (
+            <>
+              <EmergencyShortcuts location={sentAt} />
+              <Pressable
+                style={styles.doneButton}
+                onPress={() => router.back()}
+                hitSlop={8}
+              >
+                <Text style={styles.doneButtonText}>Haritaya dön</Text>
+              </Pressable>
+            </>
+          ) : null}
+        </View>
       ) : (
         <>
           {/* Item 4: URGENT one-gesture path. */}
@@ -317,6 +345,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#E5484D",
   },
+  successPane: {
+    flex: 1,
+    alignItems: "center",
+  },
   success: {
     marginTop: 40,
     fontSize: 16,
@@ -327,6 +359,16 @@ const styles = StyleSheet.create({
   },
   successUrgent: {
     color: "#E5484D",
+  },
+  doneButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+  },
+  doneButtonText: {
+    fontSize: 14,
+    color: "#1D6FEB",
+    fontWeight: "600",
   },
   sendButton: {
     marginTop: 12,
