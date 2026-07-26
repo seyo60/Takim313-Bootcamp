@@ -165,6 +165,32 @@ interface BackendHeatmapPoint {
 }
 
 /**
+ * The backend's `total_risk` is NOT on the 0-100 scale the UI works in — it
+ * runs roughly 0-10, and the backend itself multiplies by 10 whenever it needs
+ * a 0-100 number. Evidence in backend/routing.py:
+ *
+ *   safety_score = 100 - avg_risk * 10        (avg_risk = a cell's total_risk)
+ *   RISK_WEIGHT_FACTOR = 10.0                 (risk 10 ≈ doubles edge cost)
+ *
+ * So a route crossing cells of total_risk 4.9 is reported as risk_score 49,
+ * while the same cells were being fed to the heatmap layer as "4.9 out of 100".
+ * Left unscaled the heatmap renders at ~5% weight (effectively invisible) and
+ * no cell ever crosses the nearby-alert threshold.
+ *
+ * Applying the backend's own transform here keeps hex risk and route risk on
+ * one scale, which is what the UI's thresholds and colors assume.
+ *
+ * TODO(osman): confirm the intended range with Seymen/Merve — the seed data is
+ * currently a single repeated value (anlik_risk 9.8 × 12 rows), so the upper
+ * bound is inferred from the formulas, not observed.
+ */
+const BACKEND_RISK_SCALE = 10;
+
+function normalizeRisk(totalRisk: number): number {
+  return Math.max(0, Math.min(100, totalRisk * BACKEND_RISK_SCALE));
+}
+
+/**
  * Fetches the hexagon-risk cells for the heatmap layer (GET /api/v1/heatmap).
  * The backend keeps H3 indexing server-side and returns {lat, lng, total_risk}
  * per cell centroid; we map total_risk → risk_score here so the rest of the
@@ -186,7 +212,7 @@ export async function getHeatmap(): Promise<HexRisk[] | null> {
     return response.data.map((point) => ({
       lat: point.lat,
       lng: point.lng,
-      risk_score: point.total_risk,
+      risk_score: normalizeRisk(point.total_risk),
     }));
   } catch (error) {
     logRequestError("getHeatmap (GET /api/v1/heatmap)", error);
@@ -302,7 +328,7 @@ export async function getNearbyAlerts(
     const points: HexRisk[] = response.data.map((point) => ({
       lat: point.lat,
       lng: point.lng,
-      risk_score: point.total_risk,
+      risk_score: normalizeRisk(point.total_risk),
     }));
     return riskPointsToAlerts(points, location);
   } catch (error) {
