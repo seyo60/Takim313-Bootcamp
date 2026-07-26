@@ -54,15 +54,14 @@ export function useNearbyAlerts(location: LngLat | null): UseNearbyAlertsResult 
   const lng = location?.[0];
   const lat = location?.[1];
 
+  const enabled = lng !== undefined && lat !== undefined;
+
   useEffect(() => {
-    if (lng === undefined || lat === undefined) {
-      setAlerts([]);
-      return;
-    }
+    if (!enabled) return;
 
     let cancelled = false;
     (async () => {
-      const fresh = await getNearbyAlerts([lng, lat]);
+      const fresh = await getNearbyAlerts([lng as number, lat as number]);
       if (cancelled || !fresh) return; // error → keep whatever we had
       setAlerts(fresh);
     })();
@@ -70,15 +69,15 @@ export function useNearbyAlerts(location: LngLat | null): UseNearbyAlertsResult 
     return () => {
       cancelled = true;
     };
-  }, [lng, lat, nonce]);
+  }, [enabled, lng, lat, nonce]);
 
   // Background polling — the "trigger" for proactive alerts (AC #4), now that
   // the data behind it is live instead of a mock timer.
   useEffect(() => {
-    if (lng === undefined || lat === undefined) return;
+    if (!enabled) return;
     const timer = setInterval(() => setNonce((n) => n + 1), POLL_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [lng, lat]);
+  }, [enabled]);
 
   const dismiss = useCallback((alertId: string) => {
     setDismissedIds((prev) => {
@@ -91,9 +90,13 @@ export function useNearbyAlerts(location: LngLat | null): UseNearbyAlertsResult 
 
   const refetch = useCallback(() => setNonce((n) => n + 1), []);
 
-  const visible = alerts
-    .filter((alert) => !dismissedIds.has(alert.alert_id))
-    .slice(0, MAX_VISIBLE_ALERTS);
+  // Derived, not reset by an effect: with no location there is nothing nearby
+  // to warn about, so the list is simply empty for this render.
+  const visible = enabled
+    ? alerts
+        .filter((alert) => !dismissedIds.has(alert.alert_id))
+        .slice(0, MAX_VISIBLE_ALERTS)
+    : [];
 
   // Auto-dismiss (AC #5). Critical alerts are exempt: a card warning about an
   // 80+ risk zone should wait for the user to acknowledge it, not disappear on

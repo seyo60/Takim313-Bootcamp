@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -35,14 +35,22 @@ interface Props {
  * a gentle fade instead of lingering forever.
  */
 export function StatusBanner({ variant, text, onRetry, autoDismiss }: Props) {
-  const opacity = useRef(new Animated.Value(1)).current;
-  const [hidden, setHidden] = useState(false);
+  // useState's initializer runs once, unlike `useRef(new Animated.Value(1))`,
+  // which constructed a throwaway Animated.Value on every single render and
+  // then read `.current` during render — unsafe once React may discard and
+  // replay a render.
+  const [opacity] = useState(() => new Animated.Value(1));
+
+  // Which banner has faded itself out, identified by its content. Comparing
+  // against the current content derives visibility during render, so a new
+  // banner is visible immediately instead of needing an effect to un-hide it.
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
+  const bannerKey = `${variant}|${text}|${autoDismiss ? 1 : 0}`;
+  const hidden = dismissedKey === bannerKey;
 
   useEffect(() => {
-    // Reset visibility whenever the banner's content changes, so switching
-    // (e.g. a faded info notice → a new error) shows the new one fully.
+    // Fresh content starts fully opaque (the previous banner may have faded).
     opacity.setValue(1);
-    setHidden(false);
 
     if (!autoDismiss) return;
 
@@ -52,12 +60,12 @@ export function StatusBanner({ variant, text, onRetry, autoDismiss }: Props) {
         duration: FADE_OUT_MS,
         useNativeDriver: true,
       }).start(({ finished }) => {
-        if (finished) setHidden(true);
+        if (finished) setDismissedKey(bannerKey);
       });
     }, AUTO_DISMISS_MS);
 
     return () => clearTimeout(timer);
-  }, [autoDismiss, text, variant, opacity]);
+  }, [autoDismiss, bannerKey, opacity]);
 
   if (hidden) return null;
 

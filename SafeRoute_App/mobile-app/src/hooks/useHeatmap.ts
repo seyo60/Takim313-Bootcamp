@@ -15,26 +15,32 @@ export interface UseHeatmapResult {
  * Loads the hexagon-risk cells on mount; `refetch()` reloads them on demand.
  * While a refetch is in flight the previous cells stay on screen so the
  * layer doesn't flicker.
+ *
+ * `status` is derived during render by comparing the settled result against the
+ * request the current inputs call for, instead of being written into state by
+ * the effect — that used to cost a second render pass on every load.
  */
 export function useHeatmap(): UseHeatmapResult {
+  // Last successful cells. Kept across refetches on purpose: the layer keeps
+  // rendering these while the next request is in flight, so it never blinks.
   const [points, setPoints] = useState<HexRisk[]>([]);
-  const [status, setStatus] = useState<HeatmapStatus>("loading");
+  // The settled outcome of a request, tagged with which request it answers.
+  const [fetched, setFetched] = useState<{ key: number; ok: boolean } | null>(
+    null
+  );
   // Bumping this re-runs the fetch effect.
   const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    setStatus("loading");
 
     (async () => {
       const fresh = await getHeatmap();
       if (cancelled) return;
-      if (fresh) {
-        setPoints(fresh);
-        setStatus("ready");
-      } else {
-        setStatus("error");
-      }
+      // Only replace the cells on success — a failed refetch leaves the
+      // previous ones on the map rather than emptying it.
+      if (fresh) setPoints(fresh);
+      setFetched({ key: nonce, ok: fresh !== null });
     })();
 
     return () => {
@@ -43,6 +49,10 @@ export function useHeatmap(): UseHeatmapResult {
   }, [nonce]);
 
   const refetch = useCallback(() => setNonce((n) => n + 1), []);
+
+  const settled = fetched?.key === nonce ? fetched : null;
+  const status: HeatmapStatus =
+    settled === null ? "loading" : settled.ok ? "ready" : "error";
 
   return { points, status, refetch };
 }

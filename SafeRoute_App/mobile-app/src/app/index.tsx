@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import Mapbox, {
@@ -23,7 +23,7 @@ import { RouteInfoCard } from "@/components/RouteInfoCard";
 import { StatusBanner, type BannerVariant } from "@/components/StatusBanner";
 import { AlertBanner } from "@/components/AlertBanner";
 import type { GeocodingResult } from "@/lib/geocoding";
-import type { LngLat, NearbyAlert } from "@/lib/types";
+import type { LngLat, NearbyAlert, RouteResponse } from "@/lib/types";
 
 Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? "");
 
@@ -169,12 +169,19 @@ export default function Index() {
     () => (route ? getRouteOptions(route, riskHexes) : []),
     [route, riskHexes]
   );
-  const [selectedKind, setSelectedKind] = useState<RouteKind>("safe");
-
-  // A freshly fetched route always starts on the safe option.
-  useEffect(() => {
-    setSelectedKind("safe");
-  }, [route]);
+  // Route selection. Stored together with the route it belongs to so that a
+  // freshly fetched route falls back to "safe" by derivation — an effect that
+  // reset this on every route change cost a second render pass and briefly
+  // showed the new route under the old selection.
+  const [selection, setSelection] = useState<{
+    route: RouteResponse | null;
+    kind: RouteKind;
+  }>({ route: null, kind: "safe" });
+  const selectedKind = selection.route === route ? selection.kind : "safe";
+  const setSelectedKind = useCallback(
+    (kind: RouteKind) => setSelection({ route, kind }),
+    [route]
+  );
 
   // Item 2: the currently selected route + a representative point on it (its
   // midpoint) drive the LLM risk explanation. Switching the toggle re-fetches

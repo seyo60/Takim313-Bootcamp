@@ -15,6 +15,12 @@ export interface UseStreetRiskResult {
   retry: () => void;
 }
 
+/** A settled response, tagged with the request that produced it. */
+interface FetchedExplanation {
+  key: string;
+  explanation: StreetRiskExplanation | null;
+}
+
 /**
  * Fetches the LLM risk explanation for the currently selected route. Pass null
  * while no route is selected — the hook stays "idle" and does not hit the
@@ -23,15 +29,15 @@ export interface UseStreetRiskResult {
  * always matches the highlighted route.
  *
  * A stale response from a superseded request is ignored.
+ *
+ * "idle" and "loading" are derived during render from the inputs rather than
+ * written by the effect — see useRoute for why.
  */
 export function useStreetRisk(
   location: LngLat | null,
   riskScore: number | null
 ): UseStreetRiskResult {
-  const [result, setResult] = useState<Omit<UseStreetRiskResult, "retry">>({
-    explanation: null,
-    status: "idle",
-  });
+  const [fetched, setFetched] = useState<FetchedExplanation | null>(null);
   // Bumping this re-runs the fetch effect with the same inputs.
   const [nonce, setNonce] = useState(0);
 
@@ -40,34 +46,41 @@ export function useStreetRisk(
   const lng = location?.[0];
   const lat = location?.[1];
 
+  // Only the location gates the fetch: a null riskScore (e.g. the shortest
+  // route, whose risk the backend doesn't report) still gets an explanation —
+  // the backend derives risk from the location; the mock uses a mid default.
+  const enabled = lng !== undefined && lat !== undefined;
+  const requestKey = enabled ? `${lng},${lat},${riskScore},${nonce}` : null;
+
   useEffect(() => {
-    // Only the location gates the fetch: a null riskScore (e.g. the shortest
-    // route, whose risk the backend doesn't report) still gets an explanation —
-    // the backend derives risk from the location; the mock uses a mid default.
-    if (lng === undefined || lat === undefined) {
-      setResult({ explanation: null, status: "idle" });
-      return;
-    }
+    if (requestKey === null) return;
 
     let cancelled = false;
-    setResult({ explanation: null, status: "loading" });
-
     (async () => {
-      const explanation = await getStreetRiskExplanation([lng, lat], riskScore);
-      if (cancelled) return;
-      setResult(
-        explanation
-          ? { explanation, status: "ready" }
-          : { explanation: null, status: "error" }
+      const explanation = await getStreetRiskExplanation(
+        [lng as number, lat as number],
+        riskScore
       );
+      if (cancelled) return;
+      setFetched({ key: requestKey, explanation });
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [lng, lat, riskScore, nonce]);
+  }, [requestKey, lng, lat, riskScore]);
 
   const retry = useCallback(() => setNonce((n) => n + 1), []);
 
-  return { ...result, retry };
+  const settled = fetched?.key === requestKey ? fetched : null;
+
+  if (requestKey === null) {
+    return { explanation: null, status: "idle", retry };
+  }
+  if (settled === null) {
+    return { explanation: null, status: "loading", retry };
+  }
+  return settled.explanation
+    ? { explanation: settled.explanation, status: "ready", retry }
+    : { explanation: null, status: "error", retry };
 }
