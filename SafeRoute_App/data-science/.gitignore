@@ -1,0 +1,15 @@
+# OSMnx'in Overpass API yanitlarini otomatik kaydettigi onbellek (backend/.gitignore'daki
+# cache/ kuraliyla tutarli) - yeniden uretilebilir, elle bakilmaz.
+cache/
+
+# Ham/islenmemis kaynak veri (suc, 311 lamba arizasi, bos bina, CTA duraklari).
+# build_risk_dataset.py / fetch_bonus_datasets.py her calistiginda yeniden
+# uretilir - Chicago'nun acik veri portali her zaman erisilebilir oldugu icin
+# repoda saklamaya gerek yok.
+raw/
+
+# OSMnx graf dosyalari (backend/.gitignore'daki test_network.graphml kuraliyla
+# tutarli): deneysel/onaylanmamis graf ciktilari commit edilmez. Bir graf
+# Seymen tarafindan onaylanip devreye alinirsa backend/ klasorune tasinir ve
+# ORADA commit edilir (backend_test_graph.graphml gibi).
+*.graphml
