@@ -18,32 +18,44 @@ import {
 import { addMockDispatchedAlert, getMockNearbyAlerts } from "./mockAlerts";
 import { ALERT_RADIUS_METERS, riskPointsToAlerts } from "./nearbyAlerts";
 
-/**
- * Mock flags. Route/heatmap/report went LIVE against Seymen's backend
- * (backend/main.py — contracts verified field-by-field). Set a flag back to
- * true to demo without a running backend; nothing else needs to change.
+/* ==========================================================================
+ * MOCK FLAG REGISTRY  (Backlog #12, AC1 — single place, one row per feature)
  *
- * Requires EXPO_PUBLIC_API_BASE_URL in .env pointing at the FastAPI server.
- */
+ * Every flag, what it's on, and — where it can't be turned off — the exact card
+ * that has to land first. Setting any of these back to `true` demos that
+ * feature without a backend; nothing outside this file changes either way.
+ *
+ * Live paths need EXPO_PUBLIC_API_BASE_URL in .env pointing at the FastAPI
+ * server. Contracts below were verified field-by-field against backend/main.py.
+ *
+ *   FLAG                    STATE  SOURCE / BLOCKER
+ *   ----------------------  -----  --------------------------------------------
+ *   USE_MOCK_ROUTE          live   POST /api/v1/route
+ *   USE_MOCK_HEATMAP        live   GET  /api/v1/heatmap/nearby   (Backlog #2)
+ *   USE_MOCK_REPORT         live   POST /api/v1/report
+ *   USE_MOCK_ALERTS         live*  GET  /api/v1/heatmap/nearby, derived
+ *   USE_MOCK_STREET_RISK    MOCK   ⛔ BLOCKED — Backlog #5 / BE-09
+ *
+ *   * USE_MOCK_ALERTS is live but INDIRECT: the LLM alert_dispatcher has no
+ *     HTTP route, so alerts are derived from live risk points (see
+ *     lib/nearbyAlerts.ts for why that is the same signal). Backlog #6 tracks
+ *     swapping in GET /api/v1/alerts/nearby once it exists — that is a source
+ *     change here, not a flag flip, and the UI does not move.
+ *
+ * Only one flag is still forced to mock, and it is not a mobile decision:
+ * street_explainer exists in backend/llm_integration/ but is not exposed over
+ * HTTP (backend/main.py declares six routes, none of them this one).
+ * ========================================================================== */
+
 const USE_MOCK_ROUTE = false;
 
 const USE_MOCK_HEATMAP = false;
 
 const USE_MOCK_REPORT = false;
 
-/**
- * Still mock: the backend's street_explainer service is NOT exposed over HTTP
- * yet (no endpoint in main.py). TODO(osman): flip when Seymen wires it
- * (suggested route: POST /api/v1/street-risk-explanation).
- */
+/** ⛔ Cannot be turned off yet — Backlog #5 / BE-09. See registry above. */
 const USE_MOCK_STREET_RISK = true;
 
-/**
- * LIVE — but indirectly. The alert_dispatcher service still has no HTTP route,
- * so nearby alerts are derived from the live GET /api/v1/heatmap/nearby risk
- * points instead (see lib/nearbyAlerts.ts for why that's the same signal).
- * Set to true to demo the alert UI without a backend.
- */
 const USE_MOCK_ALERTS = false;
 
 /**
