@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import Mapbox, {
@@ -15,13 +15,15 @@ import { useUserLocation } from "@/hooks/useUserLocation";
 import { useRoute } from "@/hooks/useRoute";
 import { useHeatmap } from "@/hooks/useHeatmap";
 import { useStreetRisk } from "@/hooks/useStreetRisk";
+import { useNearbyAlerts } from "@/hooks/useNearbyAlerts";
 import { getRouteBounds, getRouteOptions, type RouteKind } from "@/lib/mockRoute";
 import { hexRiskToFeatureCollection } from "@/lib/mockHeatmap";
 import { DestinationSearchBar } from "@/components/DestinationSearchBar";
 import { RouteInfoCard } from "@/components/RouteInfoCard";
 import { StatusBanner, type BannerVariant } from "@/components/StatusBanner";
+import { AlertBanner } from "@/components/AlertBanner";
 import type { GeocodingResult } from "@/lib/geocoding";
-import type { LngLat } from "@/lib/types";
+import type { LngLat, NearbyAlert, RouteResponse } from "@/lib/types";
 
 Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? "");
 
@@ -55,6 +57,18 @@ const destinationPinStyle = {
   circleStrokeWidth: 3,
   circleStrokeColor: "#fff",
 } as const;
+
+// Item 5: where a nearby danger was reported (orange dot under the alert card).
+const alertMarkerStyle = {
+  circleRadius: 7,
+  circleColor: "#E8890C",
+  circleStrokeWidth: 2,
+  circleStrokeColor: "#fff",
+} as const;
+
+// Item 5 (AC #3): how close the camera gets when the user taps an alert —
+// street level, so the marker and the surrounding blocks are both readable.
+const ALERT_FOCUS_ZOOM = 16;
 
 // Risk heatmap (item 3): weight scales with each H3 cell's risk_score (0-100);
 // the color ramp goes transparent → green → amber → orange → red as density
@@ -104,9 +118,28 @@ export default function Index() {
   } = useHeatmap();
   const [showHeatmap, setShowHeatmap] = useState(true);
 
-  // Item 6: refresh the heatmap when returning from the report modal, so a
-  // just-submitted report shows up. Skip the initial focus — the hook already
-  // fetches on mount.
+  // Item 3 (AC #2): build the GeoJSON once per data change. Inline in JSX it
+  // was re-serializing the whole city grid across the RN bridge on every
+  // unrelated re-render (route toggle, alert dismiss, location update).
+  const heatmapShape = useMemo(
+    () => hexRiskToFeatureCollection(riskHexes),
+    [riskHexes]
+  );
+
+  // Route origin: the user's real position when we have one, else the Chicago
+  // demo center (backend graph only covers Chicago anyway).
+  const origin = userCoordinate ?? CHICAGO;
+
+  // Item 5 (sprint 2): proactive alerts for dangers reported near the user.
+  const {
+    alerts,
+    dismiss: dismissAlert,
+    refetch: refetchAlerts,
+  } = useNearbyAlerts(origin);
+
+  // Item 6: refresh the heatmap + alerts when returning from the report modal,
+  // so a just-submitted report (and its dispatched alert) shows up. Skip the
+  // initial focus — the hooks already fetch on mount.
   const isFirstFocus = useRef(true);
   useFocusEffect(
     useCallback(() => {
@@ -115,30 +148,40 @@ export default function Index() {
         return;
       }
       refetchHeatmap();
-    }, [refetchHeatmap])
+      refetchAlerts();
+    }, [refetchHeatmap, refetchAlerts])
   );
-
-  // Route origin: the user's real position when we have one, else the Chicago
-  // demo center (backend graph only covers Chicago anyway).
-  const origin = userCoordinate ?? CHICAGO;
 
   // Item 3: the route flow now waits for a destination — the hook stays idle
   // until the user picks one (search or map tap).
   const {
     route,
     status,
+    errorDetail: routeErrorDetail,
     retry: retryRoute,
   } = useRoute(destination ? origin : null, destination);
 
   // Item 1: normalized list of routes to draw + toggle between (safe, and the
-  // shortest when present), plus which one is currently selected.
-  const routeOptions = route ? getRouteOptions(route) : [];
-  const [selectedKind, setSelectedKind] = useState<RouteKind>("safe");
-
-  // A freshly fetched route always starts on the safe option.
-  useEffect(() => {
-    setSelectedKind("safe");
-  }, [route]);
+  // shortest when present), plus which one is currently selected. The live
+  // heatmap cells ride along so the shortest route gets an estimated risk
+  // instead of "—" (the backend scores only the safe route).
+  const routeOptions = useMemo(
+    () => (route ? getRouteOptions(route, riskHexes) : []),
+    [route, riskHexes]
+  );
+  // Route selection. Stored together with the route it belongs to so that a
+  // freshly fetched route falls back to "safe" by derivation — an effect that
+  // reset this on every route change cost a second render pass and briefly
+  // showed the new route under the old selection.
+  const [selection, setSelection] = useState<{
+    route: RouteResponse | null;
+    kind: RouteKind;
+  }>({ route: null, kind: "safe" });
+  const selectedKind = selection.route === route ? selection.kind : "safe";
+  const setSelectedKind = useCallback(
+    (kind: RouteKind) => setSelection({ route, kind }),
+    [route]
+  );
 
   // Item 2: the currently selected route + a representative point on it (its
   // midpoint) drive the LLM risk explanation. Switching the toggle re-fetches
@@ -158,6 +201,20 @@ export default function Index() {
     status: explanationStatus,
     retry: retryExplanation,
   } = useStreetRisk(explainPoint, selectedOption?.risk_score ?? null);
+
+  // Item 5 (AC #3): tapping an alert card flies the map to the reported spot.
+  // Driven through the Camera ref rather than state so it's a one-shot move —
+  // the declarative Camera below keeps owning route framing and re-centering.
+  // `Camera` is exported as both the component and an alias for its ref type.
+  const cameraRef = useRef<Camera>(null);
+  const handleAlertFocus = useCallback((alert: NearbyAlert) => {
+    cameraRef.current?.setCamera({
+      centerCoordinate: [alert.longitude, alert.latitude],
+      zoomLevel: ALERT_FOCUS_ZOOM,
+      animationMode: "flyTo",
+      animationDuration: 900,
+    });
+  }, []);
 
   const handleSearchSelect = useCallback((result: GeocodingResult) => {
     setDestination(result.coordinate);
@@ -191,7 +248,9 @@ export default function Index() {
     status === "error"
       ? {
           variant: "error",
-          text: "Rota alınamadı — backend'e ulaşılamıyor.",
+          // Prefer the backend's own explanation (e.g. "servis alanı dışında")
+          // over the generic unreachable message.
+          text: routeErrorDetail ?? "Rota alınamadı — backend'e ulaşılamıyor.",
           onRetry: retryRoute,
         }
       : status === "loading"
@@ -216,9 +275,10 @@ export default function Index() {
         onPress={handleMapPress}
       >
         {bounds ? (
-          <Camera bounds={bounds} animationDuration={800} />
+          <Camera ref={cameraRef} bounds={bounds} animationDuration={800} />
         ) : (
           <Camera
+            ref={cameraRef}
             zoomLevel={userCoordinate ? 14 : 11}
             centerCoordinate={origin}
             animationDuration={600}
@@ -227,10 +287,7 @@ export default function Index() {
 
         {/* Item 3: hexagon risk heatmap (green → red as risk rises). */}
         {showHeatmap && riskHexes.length > 0 ? (
-          <ShapeSource
-            id="heatmapSource"
-            shape={hexRiskToFeatureCollection(riskHexes)}
-          >
+          <ShapeSource id="heatmapSource" shape={heatmapShape}>
             <HeatmapLayer id="riskHeatmap" style={heatmapStyle} />
           </ShapeSource>
         ) : null}
@@ -261,6 +318,26 @@ export default function Index() {
             </ShapeSource>
           ))}
 
+        {/* Item 5: reported-danger locations for the active alerts. */}
+        {alerts.length > 0 ? (
+          <ShapeSource
+            id="alertSource"
+            shape={{
+              type: "FeatureCollection",
+              features: alerts.map((alert) => ({
+                type: "Feature",
+                properties: {},
+                geometry: {
+                  type: "Point",
+                  coordinates: [alert.longitude, alert.latitude],
+                },
+              })),
+            }}
+          >
+            <CircleLayer id="alertMarkers" style={alertMarkerStyle} />
+          </ShapeSource>
+        ) : null}
+
         {/* Destination pin (red dot with white ring). */}
         {destination ? (
           <ShapeSource
@@ -279,6 +356,13 @@ export default function Index() {
       {/* Floating destination search (Mapbox Geocoding, client-side). */}
       <DestinationSearchBar proximity={origin} onSelect={handleSearchSelect} />
 
+      {/* Item 5: proactive nearby-danger alerts (community alert system). */}
+      <AlertBanner
+        alerts={alerts}
+        onDismiss={dismissAlert}
+        onFocus={handleAlertFocus}
+      />
+
       {/* Heatmap visibility toggle. */}
       <Pressable
         style={[
@@ -296,7 +380,14 @@ export default function Index() {
         onPress={() =>
           router.push({
             pathname: "/report",
-            params: { lng: String(origin[0]), lat: String(origin[1]) },
+            params: {
+              lng: String(origin[0]),
+              lat: String(origin[1]),
+              // Tell the report screen whether these are a real fix or the
+              // Chicago fallback, so it can warn instead of silently filing
+              // an emergency report downtown.
+              precise: userCoordinate ? "1" : "0",
+            },
           })
         }
       >

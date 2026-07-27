@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -30,41 +30,43 @@ const DEBOUNCE_MS = 350;
  */
 export function DestinationSearchBar({ proximity, onSelect }: Props) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<GeocodingResult[]>([]);
-  const [searching, setSearching] = useState(false);
-  // Distinguishes "haven't searched yet" from "searched, zero hits".
-  const [searched, setSearched] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The hits we have, tagged with the query they answer. Everything the UI
+  // needs — results, "searching…", "searched but empty" — is derived from
+  // comparing this tag against the current query, so the effect no longer has
+  // to reset three pieces of state on every keystroke that shortens the input.
+  const [fetched, setFetched] = useState<{
+    query: string;
+    hits: GeocodingResult[];
+  } | null>(null);
+
+  const trimmed = query.trim();
+  const active = trimmed.length >= 2;
 
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!active) return;
 
-    if (query.trim().length < 2) {
-      setResults([]);
-      setSearching(false);
-      setSearched(false);
-      return;
-    }
-
-    setSearching(true);
-    debounceRef.current = setTimeout(async () => {
-      const hits = await searchPlaces(query, proximity);
-      setResults(hits);
-      setSearching(false);
-      setSearched(true);
+    // The cleanup below clears this on every keystroke, which is the debounce:
+    // the request only fires once typing pauses for DEBOUNCE_MS.
+    const timer = setTimeout(async () => {
+      const hits = await searchPlaces(trimmed, proximity);
+      setFetched({ query: trimmed, hits });
     }, DEBOUNCE_MS);
 
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => clearTimeout(timer);
     // proximity is a fresh array each render; track its values instead.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, proximity?.[0], proximity?.[1]]);
+  }, [active, trimmed, proximity?.[0], proximity?.[1]]);
+
+  const current = active && fetched?.query === trimmed ? fetched : null;
+  const results = current?.hits ?? [];
+  const searching = active && current === null;
+  // Distinguishes "haven't searched yet" from "searched, zero hits".
+  const searched = current !== null;
 
   const handleSelect = (result: GeocodingResult) => {
+    // Clearing the query is enough: `active` goes false, so the result list and
+    // the "searched" flag collapse on their own.
     setQuery("");
-    setResults([]);
-    setSearched(false);
     Keyboard.dismiss();
     onSelect(result);
   };

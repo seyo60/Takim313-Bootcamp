@@ -20,7 +20,7 @@ export interface GeocodingResult {
 
 /** Shape of the relevant parts of a Mapbox Geocoding v6 response. */
 interface MapboxGeocodingResponse {
-  features: Array<{
+  features: {
     properties: {
       name?: string;
       full_address?: string;
@@ -30,7 +30,7 @@ interface MapboxGeocodingResponse {
       type: "Point";
       coordinates: [number, number];
     };
-  }>;
+  }[];
 }
 
 const GEOCODING_URL = "https://api.mapbox.com/search/geocode/v6/forward";

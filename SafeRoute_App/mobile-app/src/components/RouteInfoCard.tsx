@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import type { RouteKind, RouteOption } from "@/lib/mockRoute";
 import type { StreetRiskExplanation } from "@/lib/types";
 import type { StreetRiskStatus } from "@/hooks/useStreetRisk";
@@ -36,18 +38,29 @@ function formatDuration(seconds: number): string {
   return `${Math.max(1, Math.round(seconds / 60))} dk`;
 }
 
-/** Risk bucket → label + color. Thresholds are a UI choice, not a contract. */
-function riskInfo(score: number): { label: string; color: string } {
+/**
+ * Risk bucket → label + color. Thresholds are a UI choice, not a contract.
+ * Null = unknown (the backend doesn't report risk for the shortest route).
+ */
+function riskInfo(score: number | null): { label: string; color: string } {
+  if (score === null) return { label: "Risk bilinmiyor", color: "#8A8A8A" };
   if (score <= 33) return { label: "Düşük risk", color: "#2E9E44" };
   if (score <= 66) return { label: "Orta risk", color: "#E8890C" };
   return { label: "Yüksek risk", color: "#E5484D" };
 }
 
 /**
- * Bottom panel summarizing the selected route: distance, walking time and the
- * 0-100 risk score from the backend. When both a safe and a shortest route are
- * available it shows a segmented toggle so the user can switch between them
- * (item 1, AC #2/#3); the map highlights whichever is selected here.
+ * Draggable bottom sheet summarizing the selected route: distance, walking time
+ * and the 0-100 risk score. When both a safe and a shortest route are available
+ * it shows a segmented toggle so the user can switch between them (item 1,
+ * AC #2/#3); the map highlights whichever is selected here.
+ *
+ * Two snap points: collapsed shows the toggle + the three stats, expanded also
+ * reveals the LLM risk explanation. Dragging is handled by @gorhom/bottom-sheet
+ * (built on Gesture.Pan + Reanimated, both already in the project).
+ *
+ * No backdrop on purpose — the map above the sheet has to stay pannable while
+ * the route panel is open.
  *
  * Visuals are intentionally plain — proper styling lands with the Figma
  * designs (end-to-end.md, item 9).
@@ -61,6 +74,10 @@ export function RouteInfoCard({
   explanationStatus,
   onRetryExplanation,
 }: Props) {
+  // Collapsed height fits the toggle + stats row; expanded gives the risk
+  // explanation room without covering the whole map.
+  const snapPoints = useMemo(() => [200, "62%"], []);
+
   const selected =
     options.find((option) => option.kind === selectedKind) ?? options[0];
   if (!selected) return null;
@@ -70,105 +87,127 @@ export function RouteInfoCard({
   const showToggle = options.length > 1;
 
   return (
-    <View style={styles.card}>
-      {/* Item 1: route selection toggle (segmented control). */}
-      {showToggle ? (
-        <View style={styles.toggle}>
-          {options.map((option) => {
-            const active = option.kind === selectedKind;
-            return (
-              <Pressable
-                key={option.kind}
-                style={[styles.segment, active && styles.segmentActive]}
-                onPress={() => onSelect(option.kind)}
-              >
-                <View
-                  style={[
-                    styles.segmentDot,
-                    { backgroundColor: ROUTE_COLORS[option.kind] },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.segmentText,
-                    active && styles.segmentTextActive,
-                  ]}
+    <BottomSheet
+      index={0}
+      snapPoints={snapPoints}
+      // The ✕ clears the destination; panning the sheet away would leave a
+      // route drawn on the map with no way to read its stats.
+      enablePanDownToClose={false}
+      backgroundStyle={styles.sheetBackground}
+      handleIndicatorStyle={styles.sheetHandle}
+    >
+      <BottomSheetScrollView contentContainerStyle={styles.content}>
+        {/* Item 1: route selection toggle (segmented control). */}
+        {showToggle ? (
+          <View style={styles.toggle}>
+            {options.map((option) => {
+              const active = option.kind === selectedKind;
+              return (
+                <Pressable
+                  key={option.kind}
+                  style={[styles.segment, active && styles.segmentActive]}
+                  onPress={() => onSelect(option.kind)}
                 >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <View
+                    style={[
+                      styles.segmentDot,
+                      { backgroundColor: ROUTE_COLORS[option.kind] },
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      active && styles.segmentTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+
+        <View style={styles.mainRow}>
+          <View style={styles.stats}>
+            <View style={styles.stat}>
+              <Text style={styles.statValue}>
+                {formatDistance(selected.distance_m)}
+              </Text>
+              <Text style={styles.statLabel}>Mesafe</Text>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.stat}>
+              <Text style={styles.statValue}>
+                {formatDuration(selected.duration_s)}
+              </Text>
+              <Text style={styles.statLabel}>Yürüyüş</Text>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.stat}>
+              <Text style={[styles.statValue, { color: risk.color }]}>
+                {selected.risk_score === null
+                  ? "—"
+                  : // "~" marks a client-side estimate from the heatmap rather
+                    // than the routing engine's own score.
+                    `${selected.risk_estimated ? "~" : ""}${Math.round(
+                      selected.risk_score,
+                    )}`}
+              </Text>
+              <Text style={[styles.statLabel, { color: risk.color }]}>
+                {selected.risk_estimated
+                  ? `${risk.label} (tahmini)`
+                  : risk.label}
+              </Text>
+            </View>
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.close,
+              pressed && styles.closePressed,
+            ]}
+            onPress={onClear}
+            hitSlop={8}
+          >
+            <Text style={styles.closeText}>✕</Text>
+          </Pressable>
         </View>
-      ) : null}
 
-      <View style={styles.mainRow}>
-        <View style={styles.stats}>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>
-              {formatDistance(selected.distance_m)}
-            </Text>
-            <Text style={styles.statLabel}>Mesafe</Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>
-              {formatDuration(selected.duration_s)}
-            </Text>
-            <Text style={styles.statLabel}>Yürüyüş</Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: risk.color }]}>
-              {Math.round(selected.risk_score)}
-            </Text>
-            <Text style={[styles.statLabel, { color: risk.color }]}>
-              {risk.label}
-            </Text>
-          </View>
-        </View>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.close,
-            pressed && styles.closePressed,
-          ]}
-          onPress={onClear}
-          hitSlop={8}
-        >
-          <Text style={styles.closeText}>✕</Text>
-        </Pressable>
-      </View>
-
-      {/* Item 2: LLM risk explanation for the selected route. */}
-      <RiskExplanation
-        explanation={explanation}
-        status={explanationStatus}
-        onRetry={onRetryExplanation}
-      />
-    </View>
+        {/* Item 2: LLM risk explanation for the selected route. Sits below the
+            collapsed fold — drag the sheet up to read it. */}
+        <RiskExplanation
+          explanation={explanation}
+          status={explanationStatus}
+          onRetry={onRetryExplanation}
+        />
+      </BottomSheetScrollView>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    position: "absolute",
-    bottom: 24,
-    left: 16,
-    right: 16,
+  sheetBackground: {
     backgroundColor: "#fff",
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    shadowOffset: { width: 0, height: -2 },
+    elevation: 8,
+  },
+  sheetHandle: {
+    backgroundColor: "#d0d0d0",
+    width: 40,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
   },
   toggle: {
     flexDirection: "row",

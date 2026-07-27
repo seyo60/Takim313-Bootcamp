@@ -1,6 +1,8 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import type { RiskLevel, StreetRiskExplanation } from "@/lib/types";
 import type { StreetRiskStatus } from "@/hooks/useStreetRisk";
+import { isInsufficientData } from "@/lib/mockStreetRisk";
+import { FallbackCard } from "./FallbackCard";
 
 interface Props {
   explanation: StreetRiskExplanation | null;
@@ -25,8 +27,9 @@ const LEVEL_STYLE: Record<
  * badge, a ≤2 sentence Turkish rationale, up to 3 risk factors, and the
  * historical/live/social channel breakdown.
  *
- * Handles loading and a placeholder error/fallback state (AC #6). The full
- * guardrail/error treatment lands with item 6.
+ * Degrades gracefully (item 6): request failures render a retryable fallback
+ * card, and the guardrails' safe "insufficient data" answer renders as a
+ * neutral info card instead of a confident badge.
  */
 export function RiskExplanation({ explanation, status, onRetry }: Props) {
   if (status === "idle") return null;
@@ -42,19 +45,32 @@ export function RiskExplanation({ explanation, status, onRetry }: Props) {
     );
   }
 
-  // AC #6: placeholder fallback when the LLM errors / guardrail blocks output.
-  // TODO(osman): richer guardrail messaging lands with item 6 (fallback UI).
+  // Item 6: request failed (network/backend) → retryable fallback card. The
+  // rest of the panel (stats, toggle) keeps working — the AI section degrades
+  // gracefully instead of breaking the screen.
   if (status === "error" || !explanation) {
     return (
       <View style={styles.section}>
-        <View style={styles.fallback}>
-          <Text style={styles.fallbackText}>
-            Risk açıklaması şu an alınamıyor.
-          </Text>
-          <Pressable onPress={onRetry} hitSlop={8}>
-            <Text style={styles.retryText}>Tekrar dene</Text>
-          </Pressable>
-        </View>
+        <FallbackCard
+          icon="⚠️"
+          title="Risk açıklaması alınamadı"
+          message="Yapay zeka servisine şu an ulaşılamıyor. Rota bilgileri etkilenmez."
+          onRetry={onRetry}
+        />
+      </View>
+    );
+  }
+
+  // Item 6: the LLM's guardrails answered with the safe "insufficient data"
+  // response — show a neutral info card, not a confident risk badge.
+  if (isInsufficientData(explanation)) {
+    return (
+      <View style={styles.section}>
+        <FallbackCard
+          icon="ℹ️"
+          title="Sınırlı veri"
+          message={explanation.summary}
+        />
       </View>
     );
   }
@@ -62,7 +78,8 @@ export function RiskExplanation({ explanation, status, onRetry }: Props) {
   const level = LEVEL_STYLE[explanation.risk_level];
   // Defensive clamp: keep to ≤3 factors even if the backend sends more (AC #3).
   const factors = explanation.factors.slice(0, 3);
-  const { historical, live, social } = explanation.channels;
+  // Channel breakdown is mock/demo-only — the backend response omits it.
+  const channels = explanation.channels ?? null;
 
   return (
     <View style={styles.section}>
@@ -72,7 +89,7 @@ export function RiskExplanation({ explanation, status, onRetry }: Props) {
         </Text>
       </View>
 
-      <Text style={styles.explanation}>{explanation.explanation}</Text>
+      <Text style={styles.explanation}>{explanation.summary}</Text>
 
       {factors.length > 0 ? (
         <View style={styles.factors}>
@@ -85,12 +102,14 @@ export function RiskExplanation({ explanation, status, onRetry }: Props) {
         </View>
       ) : null}
 
-      {/* Channel breakdown (historical / live / social) from the mock JSON. */}
-      <View style={styles.channels}>
-        <ChannelStat label="Geçmiş" value={historical} />
-        <ChannelStat label="Canlı" value={live} />
-        <ChannelStat label="Sosyal" value={social} />
-      </View>
+      {/* Channel breakdown — only when provided (mock/demo; backend omits it). */}
+      {channels ? (
+        <View style={styles.channels}>
+          <ChannelStat label="Geçmiş" value={channels.historical} />
+          <ChannelStat label="Canlı" value={channels.live} />
+          <ChannelStat label="Sosyal" value={channels.social} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -119,21 +138,6 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 13,
     color: "#888",
-  },
-  fallback: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  fallbackText: {
-    fontSize: 13,
-    color: "#888",
-    flex: 1,
-  },
-  retryText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#1D6FEB",
   },
   badge: {
     alignSelf: "flex-start",

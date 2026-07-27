@@ -15,6 +15,34 @@
 
 import type { RiskLevel, StreetRiskExplanation } from "./types";
 
+/**
+ * The exact safe answer the backend's guardrails return when the LLM output
+ * violates the rules or there is not enough data (guardrails.py →
+ * get_fallback_street_response). Mirrored verbatim so the UI's
+ * insufficient-data detection works identically in mock and live modes.
+ */
+export function buildGuardrailFallback(): StreetRiskExplanation {
+  return {
+    summary:
+      "Bu bölge için yeterli güvenlik verisi bulunmuyor. Çevrenize dikkat edin.",
+    risk_level: "medium",
+    factors: ["sınırlı veri"],
+  };
+}
+
+/**
+ * True when the explanation is the guardrails' safe fallback rather than a
+ * real analysis (item 6): the "sınırlı veri" factor is the backend's marker.
+ * Shown as a neutral info card instead of a confident risk badge.
+ */
+export function isInsufficientData(
+  explanation: StreetRiskExplanation
+): boolean {
+  return explanation.factors.some(
+    (factor) => factor.trim().toLowerCase() === "sınırlı veri"
+  );
+}
+
 /** Maps a 0-100 total risk score to the badge level (thresholds are a UI choice). */
 export function riskLevelFromScore(score: number): RiskLevel {
   if (score <= 25) return "low";
@@ -30,15 +58,15 @@ export function riskLevelFromScore(score: number): RiskLevel {
  */
 const CONTENT: Record<
   RiskLevel,
-  { explanation: string; factors: string[] }
+  { summary: string; factors: string[] }
 > = {
   low: {
-    explanation:
+    summary:
       "Bu rota büyük ölçüde güvenli. Aydınlatma iyi ve son dönemde kayda değer bir olay bildirilmemiş.",
     factors: ["İyi sokak aydınlatması", "Yoğun yaya trafiği"],
   },
   medium: {
-    explanation:
+    summary:
       "Bu rotada orta düzeyde risk var. Bazı kesimlerde aydınlatma zayıf ve akşam saatlerinde tenhalaşıyor.",
     factors: [
       "Kısmen zayıf aydınlatma",
@@ -47,7 +75,7 @@ const CONTENT: Record<
     ],
   },
   high: {
-    explanation:
+    summary:
       "Bu rota riskli sayılıyor. Son 3 ayda birden fazla olay bildirilmiş ve bazı sokaklar loş.",
     factors: [
       "Zayıf aydınlatma",
@@ -56,7 +84,7 @@ const CONTENT: Record<
     ],
   },
   critical: {
-    explanation:
+    summary:
       "Bu rota yüksek riskli. Yakın zamanda ciddi olaylar bildirilmiş; mümkünse güvenli rotayı tercih edin.",
     factors: [
       "Yakın zamanda saldırı bildirimi",
@@ -74,7 +102,7 @@ const CONTENT: Record<
 export function buildMockStreetRisk(totalRisk: number): StreetRiskExplanation {
   const total = Math.max(0, Math.min(100, Math.round(totalRisk)));
   const level = riskLevelFromScore(total);
-  const { explanation, factors } = CONTENT[level];
+  const { summary, factors } = CONTENT[level];
 
   // Distribute the total across channels (weights are illustrative only).
   const historical = Math.round(total * 0.6);
@@ -83,7 +111,7 @@ export function buildMockStreetRisk(totalRisk: number): StreetRiskExplanation {
 
   return {
     risk_level: level,
-    explanation,
+    summary,
     factors,
     channels: { historical, live, social, total },
   };

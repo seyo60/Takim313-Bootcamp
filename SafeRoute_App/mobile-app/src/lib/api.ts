@@ -2,6 +2,7 @@ import axios, { AxiosError } from "axios";
 import type {
   HexRisk,
   LngLat,
+  NearbyAlert,
   ReportRequest,
   ReportResponse,
   RouteRequest,
@@ -10,29 +11,40 @@ import type {
 } from "./types";
 import { buildMockRouteResponse } from "./mockRoute";
 import { addMockReportedHex, getMockHexRisk } from "./mockHeatmap";
-import { buildMockStreetRisk } from "./mockStreetRisk";
+import {
+  buildGuardrailFallback,
+  buildMockStreetRisk,
+} from "./mockStreetRisk";
+import { addMockDispatchedAlert, getMockNearbyAlerts } from "./mockAlerts";
+import { ALERT_RADIUS_METERS, riskPointsToAlerts } from "./nearbyAlerts";
 
 /**
- * While the backend endpoints are not live yet, API calls below return local
- * mock data (shaped exactly like src/lib/types.ts). Flip to false once
- * Seymen's backend is reachable — nothing else needs to change.
+ * Mock flags. Route/heatmap/report went LIVE against Seymen's backend
+ * (backend/main.py — contracts verified field-by-field). Set a flag back to
+ * true to demo without a running backend; nothing else needs to change.
  *
- * TODO(osman): set to false when POST /api/v1/route is live (§A in end-to-end.md).
+ * Requires EXPO_PUBLIC_API_BASE_URL in .env pointing at the FastAPI server.
  */
-const USE_MOCK_ROUTE = true;
+const USE_MOCK_ROUTE = false;
 
-/** TODO(osman): set to false when GET /api/v1/heatmap is live (§B). */
-const USE_MOCK_HEATMAP = true;
+const USE_MOCK_HEATMAP = false;
 
-/** TODO(osman): set to false when POST /api/v1/report is live (§C). */
-const USE_MOCK_REPORT = true;
+const USE_MOCK_REPORT = false;
 
 /**
- * TODO(osman): set to false when POST /api/v1/street-risk-explanation is live
- * (§D). Note: develop already has a live LLM module — coordinate with Seymen on
- * the exact route + payload before flipping this.
+ * Still mock: the backend's street_explainer service is NOT exposed over HTTP
+ * yet (no endpoint in main.py). TODO(osman): flip when Seymen wires it
+ * (suggested route: POST /api/v1/street-risk-explanation).
  */
 const USE_MOCK_STREET_RISK = true;
+
+/**
+ * LIVE — but indirectly. The alert_dispatcher service still has no HTTP route,
+ * so nearby alerts are derived from the live GET /api/v1/heatmap/nearby risk
+ * points instead (see lib/nearbyAlerts.ts for why that's the same signal).
+ * Set to true to demo the alert UI without a backend.
+ */
+const USE_MOCK_ALERTS = false;
 
 /**
  * Backend base URL. Set EXPO_PUBLIC_API_BASE_URL in .env to your teammate's
@@ -95,49 +107,99 @@ function logRequestError(context: string, error: unknown): void {
   }
 }
 
+/** Result of getRoute: the route, or a human-readable failure reason. */
+export interface RouteFetchResult {
+  route: RouteResponse | null;
+  /**
+   * Backend's explanatory 4xx detail when available (e.g. the coordinates are
+   * outside Chicago's service area) — shown to the user instead of a generic
+   * "backend unreachable" message. Null for network/5xx failures.
+   */
+  errorDetail: string | null;
+}
+
 /**
  * Fetches the safest route between two coordinates from the backend
- * (POST /api/v1/route). Returns the parsed response on success, or null on any
- * failure — never throws, so callers/UI don't need try/catch just to render.
+ * (POST /api/v1/route — CONFIRMED contract: {start, end, hour?} with [lng,lat]
+ * arrays). Never throws; on failure `route` is null and `errorDetail` may
+ * carry the backend's message (Chicago-bounds rejections are HTTP 400 with a
+ * user-appropriate Turkish detail).
  *
- * While USE_MOCK_ROUTE is true, resolves with local mock data instead of
- * hitting the network (same RouteResponse shape).
+ * While USE_MOCK_ROUTE is true, resolves with local mock data instead.
  */
 export async function getRoute(
   start: LngLat,
   end: LngLat
-): Promise<RouteResponse | null> {
+): Promise<RouteFetchResult> {
   if (USE_MOCK_ROUTE) {
     // Small delay so loading states are visible/testable in the UI.
     await new Promise((resolve) => setTimeout(resolve, 400));
-    return buildMockRouteResponse(start, end);
+    return { route: buildMockRouteResponse(start, end), errorDetail: null };
   }
 
   try {
-    // TODO(osman): body field names pending §A (start/end arrays vs
-    // start_lat/start_lng) — adjust here + types.ts if Seymen picks otherwise.
-    // We send the device's local hour so risk matches the time of day; drop it
-    // if the backend decides to derive the hour server-side.
+    // Local hour rides along so risk can match the time of day (accepted by
+    // the backend now, used in the risk formula in Faz 2).
     const body: RouteRequest = { start, end, hour: new Date().getHours() };
     const response = await api.post<RouteResponse>("/api/v1/route", body);
-    return response.data;
+    return { route: response.data, errorDetail: null };
   } catch (error) {
     logRequestError("getRoute (POST /api/v1/route)", error);
-    return null;
+    // Surface the backend's 4xx explanation (e.g. out of service area).
+    if (axios.isAxiosError(error) && error.response) {
+      const status = error.response.status;
+      const detail = (error.response.data as { detail?: unknown })?.detail;
+      if (status >= 400 && status < 500 && typeof detail === "string") {
+        return { route: null, errorDetail: detail };
+      }
+    }
+    return { route: null, errorDetail: null };
   }
+}
+
+/** Wire shape of GET /api/v1/heatmap — CONFIRMED flat array (main.py HeatmapPoint). */
+interface BackendHeatmapPoint {
+  lat: number;
+  lng: number;
+  total_risk: number;
+}
+
+/**
+ * The backend's `total_risk` is NOT on the 0-100 scale the UI works in — it
+ * runs roughly 0-10, and the backend itself multiplies by 10 whenever it needs
+ * a 0-100 number. Evidence in backend/routing.py:
+ *
+ *   safety_score = 100 - avg_risk * 10        (avg_risk = a cell's total_risk)
+ *   RISK_WEIGHT_FACTOR = 10.0                 (risk 10 ≈ doubles edge cost)
+ *
+ * So a route crossing cells of total_risk 4.9 is reported as risk_score 49,
+ * while the same cells were being fed to the heatmap layer as "4.9 out of 100".
+ * Left unscaled the heatmap renders at ~5% weight (effectively invisible) and
+ * no cell ever crosses the nearby-alert threshold.
+ *
+ * Applying the backend's own transform here keeps hex risk and route risk on
+ * one scale, which is what the UI's thresholds and colors assume.
+ *
+ * TODO(osman): confirm the intended range with Seymen/Merve — the seed data is
+ * currently a single repeated value (anlik_risk 9.8 × 12 rows), so the upper
+ * bound is inferred from the formulas, not observed.
+ */
+const BACKEND_RISK_SCALE = 10;
+
+function normalizeRisk(totalRisk: number): number {
+  return Math.max(0, Math.min(100, totalRisk * BACKEND_RISK_SCALE));
 }
 
 /**
  * Fetches the hexagon-risk cells for the heatmap layer (GET /api/v1/heatmap).
- * Each cell is one H3 hexagon scored by the XGBoost batch prediction. Returns
- * null on failure — never throws.
+ * The backend keeps H3 indexing server-side and returns {lat, lng, total_risk}
+ * per cell centroid; we map total_risk → risk_score here so the rest of the
+ * app only knows the HexRisk shape. Returns null on failure — never throws.
  *
  * While USE_MOCK_HEATMAP is true, resolves with a local mock hexagon grid.
  *
- * TODO(osman): §B pending — response may be a GeoJSON FeatureCollection
- * instead of a flat array; adjust the parsing here (only here) if so.
  * TODO(osman): if the full-city payload turns out too heavy, switch to
- * GET /api/v1/heatmap/nearby with the user's location + radius.
+ * GET /api/v1/heatmap/nearby (already live) with the user's location + radius.
  */
 export async function getHeatmap(): Promise<HexRisk[] | null> {
   if (USE_MOCK_HEATMAP) {
@@ -146,12 +208,26 @@ export async function getHeatmap(): Promise<HexRisk[] | null> {
   }
 
   try {
-    const response = await api.get<HexRisk[]>("/api/v1/heatmap");
-    return response.data;
+    const response = await api.get<BackendHeatmapPoint[]>("/api/v1/heatmap");
+    return response.data.map((point) => ({
+      lat: point.lat,
+      lng: point.lng,
+      risk_score: normalizeRisk(point.total_risk),
+    }));
   } catch (error) {
     logRequestError("getHeatmap (GET /api/v1/heatmap)", error);
     return null;
   }
+}
+
+/** Result of submitReport: the acknowledgement, or a human-readable reason. */
+export interface ReportSubmitResult {
+  response: ReportResponse | null;
+  /**
+   * Backend's explanatory 4xx detail when available (e.g. the report is
+   * outside Chicago's service area). Null for network/5xx failures.
+   */
+  errorDetail: string | null;
 }
 
 /**
@@ -163,30 +239,100 @@ export async function getHeatmap(): Promise<HexRisk[] | null> {
  * mimicking what the backend pipeline will eventually do, so the
  * "report → new hot spot on the heatmap" flow is demoable today.
  *
- * The optional `priority` field ("urgent") rides along in the body. If the
- * backend doesn't support it yet, it's harmlessly ignored server-side; in mock
- * mode we simulate acceptance (item 4, AC #3).
+ * CONFIRMED contract (main.py): {text, lat, lng} → HTTP 201 {ok, id}. The
+ * report is analyzed by the LLM in a background task and the heatmap risk is
+ * updated server-side — refetching the heatmap after a report shows the new
+ * hot spot for real now.
  *
- * TODO(osman): §C pending — confirm body field names, whether `priority` is
- * honored, and that the response is acknowledgement-only; if analysis comes
- * back synchronously, surface it in the report screen.
+ * The optional `priority` field ("urgent") rides along in the body; the
+ * backend's pydantic model ignores unknown fields, so it's harmless until
+ * supported. TODO(osman): ask Seymen to persist priority for urgent alerts.
  */
 export async function submitReport(
   report: ReportRequest
-): Promise<ReportResponse | null> {
+): Promise<ReportSubmitResult> {
   if (USE_MOCK_REPORT) {
     // Urgent reports resolve faster to mimic a high-priority path.
     const delay = report.priority === "urgent" ? 350 : 600;
     await new Promise((resolve) => setTimeout(resolve, delay));
     addMockReportedHex(report.lng, report.lat);
-    return { ok: true, id: `mock-${Date.now()}` };
+    if (USE_MOCK_ALERTS) {
+      addMockDispatchedAlert(
+        report.lng,
+        report.lat,
+        report.priority === "urgent"
+      );
+    }
+    return {
+      response: { ok: true, id: `mock-${Date.now()}` },
+      errorDetail: null,
+    };
   }
 
   try {
     const response = await api.post<ReportResponse>("/api/v1/report", report);
-    return response.data;
+    // Item 5, mock-only side effect: while the alert endpoint doesn't exist,
+    // mimic the server-side dispatcher so "report → nearby alert" is demoable
+    // even against the live backend. Removed when USE_MOCK_ALERTS flips.
+    if (USE_MOCK_ALERTS && response.data?.ok) {
+      addMockDispatchedAlert(
+        report.lng,
+        report.lat,
+        report.priority === "urgent"
+      );
+    }
+    return { response: response.data, errorDetail: null };
   } catch (error) {
     logRequestError("submitReport (POST /api/v1/report)", error);
+    // The backend rejects out-of-area reports with an explanatory Turkish 400
+    // (main.py _ensure_within_chicago) — show that instead of "gönderilemedi".
+    if (axios.isAxiosError(error) && error.response) {
+      const status = error.response.status;
+      const detail = (error.response.data as { detail?: unknown })?.detail;
+      if (status >= 400 && status < 500 && typeof detail === "string") {
+        return { response: null, errorDetail: detail };
+      }
+    }
+    return { response: null, errorDetail: null };
+  }
+}
+
+/**
+ * Fetches active danger alerts near the user (item 5) from the LIVE
+ * GET /api/v1/heatmap/nearby endpoint: the risk points within
+ * ALERT_RADIUS_METERS of the user, keeping only the high/critical ones and
+ * shaping them into `NearbyAlert` cards (lib/nearbyAlerts.ts explains why the
+ * heatmap is the right source until the LLM dispatcher is exposed).
+ *
+ * Returns null on failure — never throws, so the alert UI can simply stay
+ * hidden rather than taking the map down with it.
+ *
+ * TODO(osman): when Seymen adds GET /api/v1/alerts/nearby, replace the request
+ * below with it and drop the riskPointsToAlerts() call — the response already
+ * matches `NearbyAlert`, so the UI does not change.
+ */
+export async function getNearbyAlerts(
+  location: LngLat
+): Promise<NearbyAlert[] | null> {
+  if (USE_MOCK_ALERTS) {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    return getMockNearbyAlerts(location);
+  }
+
+  try {
+    const [lng, lat] = location;
+    const response = await api.get<BackendHeatmapPoint[]>(
+      "/api/v1/heatmap/nearby",
+      { params: { lat, lng, radius: ALERT_RADIUS_METERS } }
+    );
+    const points: HexRisk[] = response.data.map((point) => ({
+      lat: point.lat,
+      lng: point.lng,
+      risk_score: normalizeRisk(point.total_risk),
+    }));
+    return riskPointsToAlerts(points, location);
+  } catch (error) {
+    logRequestError("getNearbyAlerts (GET /api/v1/heatmap/nearby)", error);
     return null;
   }
 }
@@ -202,16 +348,22 @@ export async function submitReport(
  *
  * @param location  representative point on the route being explained.
  * @param riskScore the route's 0-100 risk score — a MOCK-ONLY hint used to
- *   pick the level/text. The real backend derives risk from the location and
- *   ignores this; kept in the signature so mock mode has interesting output.
+ *   pick the level/text. Null when unknown (e.g. the shortest route, whose
+ *   risk the backend doesn't report); the real backend derives risk from the
+ *   location anyway, and the mock falls back to a mid-level answer.
  */
 export async function getStreetRiskExplanation(
   location: LngLat,
-  riskScore: number
+  riskScore: number | null
 ): Promise<StreetRiskExplanation | null> {
   if (USE_MOCK_STREET_RISK) {
     await new Promise((resolve) => setTimeout(resolve, 500));
-    return buildMockStreetRisk(riskScore);
+    // No risk data (e.g. the shortest route) → same safe answer the backend's
+    // guardrails produce for insufficient data (item 6). With data, a normal
+    // synthesized analysis.
+    return riskScore === null
+      ? buildGuardrailFallback()
+      : buildMockStreetRisk(riskScore);
   }
 
   try {
