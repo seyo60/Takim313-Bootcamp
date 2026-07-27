@@ -1,7 +1,7 @@
 # Safe Route App - Backend
 
 ## Gereksinimler
-- Python 3.11+ (proje 3.14 ile test edildi)
+- Python 3.11+ (proje Python 3.14 ile doğrulandı)
 - Docker Desktop (PostgreSQL + PostGIS için)
 
 ## Kurulum
@@ -14,16 +14,16 @@ pip install -r requirements.txt
 
 ### 2. `.env` dosyasını oluştur
 
-`backend` klasörünün içine `.env` adında bir dosya oluştur, içine şunları yaz (kendi bilgilerinle değiştir):
+`backend` klasörünün içine `.env` adında bir dosya oluştur ve veritabanı bağlantı bilgilerini yaz:
 
-```
+```env
 DATABASE_URL=postgresql+asyncpg://kullanici_adi:sifre@localhost:5432/veritabani_adi
 WEBHOOK_SECRET=uzun-rastgele-bir-anahtar-yaz
 ```
 
-`WEBHOOK_SECRET`, dış otomasyon araçlarının (n8n vb.) `/api/v1/webhook/social-risk` endpoint'ine erişebilmesi için gereken paylaşılan anahtardır.
+`WEBHOOK_SECRET`, dış otomasyon araçlarının (`/api/v1/webhook/social-risk`) endpoint'ine erişebilmesi için gereken paylaşılan anahtardır.
 
-**Not:** `.env` dosyası `.gitignore` içinde olduğu için repoda bulunmaz, her geliştirici kendi lokalinde oluşturmalı.
+**Not:** `.env` dosyası `.gitignore` içinde olduğu için repoda bulunmaz, her geliştirici kendi lokalinde oluşturmalıdır.
 
 ### 3. PostgreSQL + PostGIS container'ını başlat
 
@@ -43,7 +43,7 @@ cd backend
 alembic upgrade head
 ```
 
-Bu komut, `h3_heatmap` ve `reports` tablolarını (risk kanalları: `risk_historical`, `risk_live`, `risk_social`, `total_risk` dahil) veritabanında oluşturur.
+Bu komut, `h3_heatmap`, `reports` ve `etl_runs` tablolarını (risk kanalları: `risk_crime`, `risk_lighting`, `risk_live`, `total_risk` dahil) veritabanında oluşturur.
 
 ### 5. Test verisi yükle
 
@@ -53,19 +53,18 @@ Eğer `data-science/chicago_clean_data.csv` dosyası mevcutsa:
 python seed.py
 ```
 
-**Not:** `seed.py` artık sadece veri yazar, şema (tablo yapısı) oluşturmaz/değiştirmez. Şema yönetimi tamamen Alembic'in sorumluluğundadır — `seed.py`'yi çalıştırmadan önce mutlaka `alembic upgrade head` çalıştırılmış olmalı.
+**Not:** `seed.py` sadece veri yazar, şema oluşturmaz. Şema yönetimi tamamen Alembic'in sorumluluğundadır — `seed.py` çalıştırılmadan önce `alembic upgrade head` çalıştırılmış olmalıdır.
 
-### 6. Yol ağı (graph) dosyası
+### 6. Yol ağı (graph) ve Compact CSR motoru
 
-`/api/v1/route` endpoint'i çalışması için bir OSMnx graf dosyasına ihtiyaç duyar. `main.py` içindeki `GRAPH_PATH` değişkeni, gerçek Chicago grafını (`../data-science/chicago.graphml`) işaret eder. Bu dosya büyük olduğu için (~350 MB) repoda bulunmaz, ayrıca temin edilmesi gerekir.
+Sistem production ortamında yüksek performanslı **SciPy Compact CSR Dijkstra** motorunu (`CompactCSREngine`) kullanır. 
+`compact_graph.npz` dosyası veya OSMnx graf dosyası (`chicago.graphml`) yüklenerek milisaniyeler içinde rota hesaplaması gerçekleştirilir.
 
-Eğer bu dosya henüz elinde yoksa, test amaçlı küçük bir bölge indirebilirsin:
+Eğer test amaçlı küçük bir bölge grafı üretmek istersen:
 
 ```bash
 python generate_test_graph.py
 ```
-
-Bu, `test_network.graphml` dosyasını oluşturur (Chicago Loop / downtown bölgesi). Test grafını kullanmak istersen, `main.py` içindeki `GRAPH_PATH` değişkenini geçici olarak bu dosyaya çevir.
 
 ### 7. Sunucuyu başlat
 
@@ -73,9 +72,19 @@ Bu, `test_network.graphml` dosyasını oluşturur (Chicago Loop / downtown bölg
 uvicorn main:app --reload
 ```
 
-**Not:** Gerçek Chicago grafı (~316.000 kavşak, ~1 milyon sokak parçası) kullanıldığında, sunucunun açılışı (graf yükleme + risk ağırlıklarının hesaplanması) yaklaşık 2 dakika sürer. Bu, sadece açılışta bir kez gerçekleşir — rota istekleri saniyeler değil milisaniyeler içinde cevaplanır.
-
 Swagger API dokümantasyonuna şuradan erişebilirsin: http://127.0.0.1:8000/docs
+
+---
+
+## Pytest Testlerini Çalıştırma
+
+Tüm backend test takımını çalıştırmak için `backend` klasöründe:
+
+```bash
+pytest
+```
+
+---
 
 ## Migration ile Şema Değişikliği Yapma
 
@@ -83,56 +92,59 @@ Swagger API dokümantasyonuna şuradan erişebilirsin: http://127.0.0.1:8000/doc
 
 ```bash
 alembic revision --autogenerate -m "değişikliğin kısa açıklaması"
-```
-
-Oluşan dosyayı `alembic/versions/` klasöründe gözden geçir, sonra uygula:
-
-```bash
 alembic upgrade head
 ```
 
-**Önemli:**
-- `Base.metadata.create_all` veya elle `DROP TABLE` gibi yöntemlerle şema değiştirmeye çalışma — bu veri kaybına yol açar ve Alembic'in migration geçmişini bozar. Şema değişiklikleri her zaman Alembic üzerinden yapılmalı.
-- GeoAlchemy2'nin `Geography` kolonları için otomatik oluşturduğu GIST index ile Alembic'in ayrıca ürettiği `create_index` çağrısı çakışabilir (`DuplicateTableError`). Autogenerate migration'ında `location` kolonu için oluşan `op.create_index(...)` satırlarını kontrol et, gerekirse kaldır.
+---
 
 ## API Endpoint'leri
 
 | Method | Endpoint | Açıklama |
 |--------|----------|----------|
-| GET | `/` | Sağlık kontrolü |
-| POST | `/api/v1/route` | İki nokta arası en güvenli rotayı hesaplar |
-| POST | `/api/v1/report` | Kullanıcıdan gelen anlık tehlike ihbarını kaydeder (arka planda LLM ile analiz edilir) |
-| POST | `/api/v1/webhook/social-risk` | Dış otomasyon araçlarının (n8n vb.) sosyal medya/haber risk verisini gönderdiği uç nokta. `X-Webhook-Secret` header'ı zorunludur |
-| GET | `/api/v1/heatmap` | Tüm risk noktalarını (`total_risk`) döner |
+| GET | `/health` veya `/` | Sistem sağlık ve durum kontrolü |
+| POST | `/api/v1/route` | Güvenli ve en kısa rotaları, risk karşılaştırmasını ve veri güncellik zamanlarını döner |
+| GET | `/api/v1/heatmap/map` | Mapbox için H3 Resolution 9 GeoJSON poligon risk katmanı (`channel`, `bbox`, `include_no_data` destekli) |
+| GET | `/api/v1/reports/map` | Harita gösterimi için son 60 dakikaya ait anonimleştirilmiş topluluk ihbarları |
+| GET | `/api/v1/reports/{id}` | IDOR korumalı, takip jetonlu sterilize ihbar durum sorgulama |
+| POST | `/api/v1/report` | Kullanıcıdan gelen anlık tehlike ihbarını kaydeder ve arka planda işler |
+| GET | `/api/v1/heatmap` | Geriye dönük uyumlu tüm risk noktalarını (`total_risk`, `risk_crime`, `risk_lighting`, `risk_live`) döner |
 | GET | `/api/v1/heatmap/nearby` | Belirli bir konuma yakın risk noktalarını döner |
+| POST | `/api/v1/webhook/social-risk` | Dış kaynaklardan risk verisi beslemesi |
+
+---
 
 ## Risk Hesaplama Mantığı
 
-Her H3 hücresinin nihai risk skoru (`total_risk`), üç kanalın ağırlıklı toplamıdır:
+Her H3 hücresinin nihai risk skoru (`total_risk`), 3 kanalın ağırlıklı toplamıdır:
 
 ```
-total_risk = (risk_historical × 0.4) + (risk_live × 0.5) + (risk_social × 0.1)
+total_risk = (risk_crime × 0.65) + (risk_lighting × 0.20) + (risk_live × 0.15)
 ```
 
-- **risk_historical**: Geçmiş suç verisinden (`chicago_clean_data.csv`) gelir, `seed.py` ile yüklenir
-- **risk_live**: Kullanıcıların anlık ihbarlarından (`/api/v1/report`), LLM analiziyle birikir
-- **risk_social**: Dış kaynaklardan (`/api/v1/webhook/social-risk`) gelir
+- **risk_crime (%65)**: Chicago Polis Departmanı tarihsel suç verilerinden (`etl_crime.py`) hesaplanır.
+- **risk_lighting (%20)**: Chicago 311 Sokak Aydınlatma Arızası verilerinden (`etl_lighting.py`) hesaplanır.
+- **risk_live (%15)**: Kullanıcıların anlık ihbarlarından (`/api/v1/report`), sınırlı birikim (bounded accumulation) formülüyle güncellenir:
+  $$R_{\text{live, yeni}} = 1.0 - (1.0 - R_{\text{live, eski}}) \times (1.0 - \text{Etki})$$
 
-Bu formül **tek bir yerde** (`crud.py` içindeki `_compute_total_risk`) tanımlıdır — yeni bir hesaplama noktası eklenirse mutlaka bu fonksiyon kullanılmalı, formül başka bir yerde tekrar yazılmamalı.
+Bu formül **tek bir yerde** (`crud.py` içindeki `_compute_total_risk`) tanımlıdır.
+
+---
 
 ## Proje Yapısı
 
 ```
 backend/
 ├── main.py                  # FastAPI uygulaması ve endpoint tanımları
-├── config.py                # Ortam değişkenleri (.env okuma)
-├── models.py                 # SQLAlchemy veritabanı modelleri
-├── crud.py                    # Veritabanı okuma/yazma fonksiyonları + risk formülü
-├── routing.py                 # Risk ağırlıklı rota hesaplama mantığı (OSMnx + NetworkX)
-├── llm_service.py             # İhbar metni risk analizi (şu an mock, gerçek LLM'e bağlanacak)
-├── seed.py                    # CSV'den test verisi yükleme script'i (sadece veri, şema değil)
-├── generate_test_graph.py     # Test amaçlı küçük bir OSMnx grafı üretir
-├── check_graph_coverage.py    # Bir graf dosyasının kapsadığı alanı raporlar
-├── requirements.txt           # Python bağımlılıkları
-└── alembic/                   # Veritabanı migration dosyaları
+├── config.py                # Ortam değişkenleri okuma (.env)
+├── models.py                # SQLAlchemy veritabanı modelleri
+├── crud.py                  # Veritabanı fonksiyonları + risk hesaplama mantığı
+├── routing_engine.py        # SciPy Compact CSR Dijkstra & NetworkX rotalama motorları
+├── routing.py               # Rotalama yardımcı fonksiyonları ve dönüştürücüler
+├── etl_crime.py             # Suç verisi ETL güncelleme betiği
+├── etl_lighting.py          # Sokak aydınlatma verisi ETL güncelleme betiği
+├── seed.py                  # CSV'den test verisi yükleme script'i
+├── generate_test_graph.py    # Test amaçlı küçük OSMnx grafı üretir
+├── requirements.txt          # Python bağımlılıkları
+├── alembic/                 # Veritabanı migration dosyaları
+└── tests/                   # Pytest birim ve entegrasyon test takımı (49 test)
 ```
