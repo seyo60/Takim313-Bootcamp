@@ -16,6 +16,12 @@ from shapely.geometry import Point
 
 from config import settings
 from models import H3HeatmapModel
+<<<<<<< Updated upstream
+=======
+# Agirliklar TEK yerden (crud.py) import edilir - kopya sabit tutulmaz.
+# 2 kanalli yapi: HISTORICAL_WEIGHT=0.5, LIVE_WEIGHT=0.5, SOCIAL_WEIGHT=0.0
+from crud import CRIME_WEIGHT, LIGHTING_WEIGHT, LIVE_WEIGHT, HISTORICAL_WEIGHT, _compute_total_risk  # noqa: F401
+>>>>>>> Stashed changes
 
 engine = create_async_engine(settings.database_url, echo=False)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -53,14 +59,11 @@ async def seed_data():
                 is_domestic = row.get('domestic', 'False').lower() in ['true', '1', 't']
                 naive_utc_datetime = datetime.now(timezone.utc).replace(tzinfo=None)
 
-                historical_risk = float(row['anlik_risk'])
+                crime_risk = float(row['anlik_risk'])
+                lighting_risk = 0.0
+                live_risk = 0.0
 
-                # ONEMLI: crud.py'deki update_h3_live_risk / update_h3_social_risk
-                # fonksiyonlarindaki AYNI agirlikli formulu burada da uyguluyoruz.
-                # Boylece bir bolgeye ilk canli ihbar geldiginde total_risk
-                # beklenmedik sekilde dusmuyor - zaten ayni formulle hesaplanmis oluyor.
-                # risk_live ve risk_social henuz 0 oldugu icin sadece historical katkisi var.
-                total_risk = historical_risk * HISTORICAL_WEIGHT
+                total_risk = _compute_total_risk(crime=crime_risk, lighting=lighting_risk, live=live_risk)
 
                 bulk_records.append(
                     H3HeatmapModel(
@@ -68,8 +71,10 @@ async def seed_data():
                         lat=lat,
                         lng=lng,
                         location=point_geom,
-                        risk_historical=historical_risk,
-                        risk_live=0.0,
+                        risk_crime=crime_risk,
+                        risk_lighting=lighting_risk,
+                        risk_historical=crime_risk,
+                        risk_live=live_risk,
                         risk_social=0.0,
                         total_risk=total_risk,
                         domestic=is_domestic,
