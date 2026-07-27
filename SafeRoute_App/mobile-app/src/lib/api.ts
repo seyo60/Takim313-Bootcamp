@@ -193,31 +193,60 @@ function normalizeRisk(totalRisk: number): number {
 }
 
 /**
- * Fetches the hexagon-risk cells for the heatmap layer (GET /api/v1/heatmap).
- * The backend keeps H3 indexing server-side and returns {lat, lng, total_risk}
- * per cell centroid; we map total_risk → risk_score here so the rest of the
- * app only knows the HexRisk shape. Returns null on failure — never throws.
+ * Wire → UI shape. The backend keeps H3 indexing server-side and returns
+ * {lat, lng, total_risk} per cell centroid; everything outside this module
+ * only ever sees `HexRisk`.
+ */
+function toHexRisk(points: BackendHeatmapPoint[]): HexRisk[] {
+  return points.map((point) => ({
+    lat: point.lat,
+    lng: point.lng,
+    risk_score: normalizeRisk(point.total_risk),
+  }));
+}
+
+/**
+ * How much of the city the heatmap loads around the user.
+ *
+ * The full-city endpoint became genuinely heavy once the real dataset landed
+ * (5.099 cells ≈ 266 KB of JSON, versus 12 rows before). Measured against that
+ * data, a 5 km disc is 483 cells ≈ 25 KB — a 10x cut that still covers well
+ * beyond what fits on screen at the zoom levels this app actually uses (14 when
+ * we have the user's location, and any walking route from there).
+ *
+ * Tradeoff, stated plainly: zoomed all the way out to the whole city, only the
+ * area around the user is tinted. If the team decides city-wide coverage at low
+ * zoom matters, the fix is a zoom-aware radius here, or server-side
+ * simplification — not raising this constant, which just re-creates the payload
+ * problem.
+ */
+export const HEATMAP_RADIUS_METERS = 5000;
+
+/**
+ * Fetches the hexagon-risk cells around a location
+ * (GET /api/v1/heatmap/nearby — confirmed query contract lat/lng/radius).
+ * Returns null on failure — never throws.
  *
  * While USE_MOCK_HEATMAP is true, resolves with a local mock hexagon grid.
- *
- * TODO(osman): if the full-city payload turns out too heavy, switch to
- * GET /api/v1/heatmap/nearby (already live) with the user's location + radius.
  */
-export async function getHeatmap(): Promise<HexRisk[] | null> {
+export async function getHeatmap(
+  location: LngLat,
+  radius: number = HEATMAP_RADIUS_METERS
+): Promise<HexRisk[] | null> {
   if (USE_MOCK_HEATMAP) {
     await new Promise((resolve) => setTimeout(resolve, 300));
     return getMockHexRisk();
   }
 
   try {
-    const response = await api.get<BackendHeatmapPoint[]>("/api/v1/heatmap");
-    return response.data.map((point) => ({
-      lat: point.lat,
-      lng: point.lng,
-      risk_score: normalizeRisk(point.total_risk),
-    }));
+    const [lng, lat] = location;
+    const response = await api.get<BackendHeatmapPoint[]>(
+      "/api/v1/heatmap/nearby",
+      { params: { lat, lng, radius } }
+    );
+    return toHexRisk(response.data);
   } catch (error) {
-    logRequestError("getHeatmap (GET /api/v1/heatmap)", error);
+    logRequestError("getHeatmap (GET /api/v1/heatmap/nearby)", error);
     return null;
   }
 }
@@ -327,12 +356,7 @@ export async function getNearbyAlerts(
       "/api/v1/heatmap/nearby",
       { params: { lat, lng, radius: ALERT_RADIUS_METERS } }
     );
-    const points: HexRisk[] = response.data.map((point) => ({
-      lat: point.lat,
-      lng: point.lng,
-      risk_score: normalizeRisk(point.total_risk),
-    }));
-    return riskPointsToAlerts(points, location);
+    return riskPointsToAlerts(toHexRisk(response.data), location);
   } catch (error) {
     logRequestError("getNearbyAlerts (GET /api/v1/heatmap/nearby)", error);
     return null;
