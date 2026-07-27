@@ -165,29 +165,31 @@ interface BackendHeatmapPoint {
 }
 
 /**
- * The backend's `total_risk` is NOT on the 0-100 scale the UI works in — it
- * runs roughly 0-10, and the backend itself multiplies by 10 whenever it needs
- * a 0-100 number. Evidence in backend/routing.py:
+ * `total_risk` is on the same 0-100 scale the UI works in, so it maps straight
+ * across. Clamped only to defend against a bad payload.
  *
- *   safety_score = 100 - avg_risk * 10        (avg_risk = a cell's total_risk)
- *   RISK_WEIGHT_FACTOR = 10.0                 (risk 10 ≈ doubles edge cost)
+ * History, because this was briefly wrong in both directions: an earlier
+ * version multiplied by 10 here. That was inferred from the formulas in
+ * backend/routing.py (`safety_score = 100 - avg_risk * 10`) at a time when the
+ * only evidence available was a 12-row seed file holding one repeated value
+ * (anlik_risk 9.8). The real dataset landed on 2026-07-25 (5.099 cells) and
+ * settles it — data-science/ROUTE_SCORES_INFO.md states the pipeline was moved
+ * to 0-100 precisely so the historical channel would carry weight against the
+ * live channel, which crud.py already scores 0-100.
  *
- * So a route crossing cells of total_risk 4.9 is reported as risk_score 49,
- * while the same cells were being fed to the heatmap layer as "4.9 out of 100".
- * Left unscaled the heatmap renders at ~5% weight (effectively invisible) and
- * no cell ever crosses the nearby-alert threshold.
+ * With real data the ×10 was severe: 79% of all cells clamped to a flat 100 and
+ * 86% crossed the nearby-alert threshold — a solid red heatmap and a permanent
+ * critical alert.
  *
- * Applying the backend's own transform here keeps hex risk and route risk on
- * one scale, which is what the UI's thresholds and colors assume.
- *
- * TODO(osman): confirm the intended range with Seymen/Merve — the seed data is
- * currently a single repeated value (anlik_risk 9.8 × 12 rows), so the upper
- * bound is inferred from the formulas, not observed.
+ * Note the alert threshold now behaves as designed rather than by accident.
+ * `total_risk = historical*0.5 + live*0.5`, so a cell carrying only historical
+ * risk tops out at 50 and never alerts on its own; it takes an actual live
+ * report (LLM-scored) to push a cell past 60. Alerts mean "something was
+ * reported near you", not "this is a statistically rough area" — which is
+ * exactly what item 5 promises.
  */
-const BACKEND_RISK_SCALE = 10;
-
 function normalizeRisk(totalRisk: number): number {
-  return Math.max(0, Math.min(100, totalRisk * BACKEND_RISK_SCALE));
+  return Math.max(0, Math.min(100, totalRisk));
 }
 
 /**
