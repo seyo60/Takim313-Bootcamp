@@ -110,25 +110,27 @@ export default function Index() {
     useUserLocation();
   const [destination, setDestination] = useState<LngLat | null>(null);
 
-  // Item 3/5: hexagon risk data + visibility toggle.
+  // Route origin: the user's real position when we have one, else the Chicago
+  // demo center (backend graph only covers Chicago anyway). Also the centre the
+  // heatmap and the nearby alerts are loaded around.
+  const origin = userCoordinate ?? CHICAGO;
+
+  // Item 3/5: hexagon risk data + visibility toggle. Loaded as a disc around
+  // the user rather than the whole city — see HEATMAP_RADIUS_METERS in api.ts.
   const {
     points: riskHexes,
     status: heatmapStatus,
     refetch: refetchHeatmap,
-  } = useHeatmap();
+  } = useHeatmap(origin);
   const [showHeatmap, setShowHeatmap] = useState(true);
 
   // Item 3 (AC #2): build the GeoJSON once per data change. Inline in JSX it
-  // was re-serializing the whole city grid across the RN bridge on every
-  // unrelated re-render (route toggle, alert dismiss, location update).
+  // was re-serializing the grid across the RN bridge on every unrelated
+  // re-render (route toggle, alert dismiss, location update).
   const heatmapShape = useMemo(
     () => hexRiskToFeatureCollection(riskHexes),
     [riskHexes]
   );
-
-  // Route origin: the user's real position when we have one, else the Chicago
-  // demo center (backend graph only covers Chicago anyway).
-  const origin = userCoordinate ?? CHICAGO;
 
   // Item 5 (sprint 2): proactive alerts for dangers reported near the user.
   const {

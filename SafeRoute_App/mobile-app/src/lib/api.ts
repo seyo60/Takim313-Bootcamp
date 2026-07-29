@@ -18,32 +18,44 @@ import {
 import { addMockDispatchedAlert, getMockNearbyAlerts } from "./mockAlerts";
 import { ALERT_RADIUS_METERS, riskPointsToAlerts } from "./nearbyAlerts";
 
-/**
- * Mock flags. Route/heatmap/report went LIVE against Seymen's backend
- * (backend/main.py — contracts verified field-by-field). Set a flag back to
- * true to demo without a running backend; nothing else needs to change.
+/* ==========================================================================
+ * MOCK FLAG REGISTRY  (Backlog #12, AC1 — single place, one row per feature)
  *
- * Requires EXPO_PUBLIC_API_BASE_URL in .env pointing at the FastAPI server.
- */
+ * Every flag, what it's on, and — where it can't be turned off — the exact card
+ * that has to land first. Setting any of these back to `true` demos that
+ * feature without a backend; nothing outside this file changes either way.
+ *
+ * Live paths need EXPO_PUBLIC_API_BASE_URL in .env pointing at the FastAPI
+ * server. Contracts below were verified field-by-field against backend/main.py.
+ *
+ *   FLAG                    STATE  SOURCE / BLOCKER
+ *   ----------------------  -----  --------------------------------------------
+ *   USE_MOCK_ROUTE          live   POST /api/v1/route
+ *   USE_MOCK_HEATMAP        live   GET  /api/v1/heatmap/nearby   (Backlog #2)
+ *   USE_MOCK_REPORT         live   POST /api/v1/report
+ *   USE_MOCK_ALERTS         live*  GET  /api/v1/heatmap/nearby, derived
+ *   USE_MOCK_STREET_RISK    MOCK   ⛔ BLOCKED — Backlog #5 / BE-09
+ *
+ *   * USE_MOCK_ALERTS is live but INDIRECT: the LLM alert_dispatcher has no
+ *     HTTP route, so alerts are derived from live risk points (see
+ *     lib/nearbyAlerts.ts for why that is the same signal). Backlog #6 tracks
+ *     swapping in GET /api/v1/alerts/nearby once it exists — that is a source
+ *     change here, not a flag flip, and the UI does not move.
+ *
+ * Only one flag is still forced to mock, and it is not a mobile decision:
+ * street_explainer exists in backend/llm_integration/ but is not exposed over
+ * HTTP (backend/main.py declares six routes, none of them this one).
+ * ========================================================================== */
+
 const USE_MOCK_ROUTE = false;
 
 const USE_MOCK_HEATMAP = false;
 
 const USE_MOCK_REPORT = false;
 
-/**
- * Still mock: the backend's street_explainer service is NOT exposed over HTTP
- * yet (no endpoint in main.py). TODO(osman): flip when Seymen wires it
- * (suggested route: POST /api/v1/street-risk-explanation).
- */
+/** ⛔ Cannot be turned off yet — Backlog #5 / BE-09. See registry above. */
 const USE_MOCK_STREET_RISK = true;
 
-/**
- * LIVE — but indirectly. The alert_dispatcher service still has no HTTP route,
- * so nearby alerts are derived from the live GET /api/v1/heatmap/nearby risk
- * points instead (see lib/nearbyAlerts.ts for why that's the same signal).
- * Set to true to demo the alert UI without a backend.
- */
 const USE_MOCK_ALERTS = false;
 
 /**
@@ -193,31 +205,60 @@ function normalizeRisk(totalRisk: number): number {
 }
 
 /**
- * Fetches the hexagon-risk cells for the heatmap layer (GET /api/v1/heatmap).
- * The backend keeps H3 indexing server-side and returns {lat, lng, total_risk}
- * per cell centroid; we map total_risk → risk_score here so the rest of the
- * app only knows the HexRisk shape. Returns null on failure — never throws.
+ * Wire → UI shape. The backend keeps H3 indexing server-side and returns
+ * {lat, lng, total_risk} per cell centroid; everything outside this module
+ * only ever sees `HexRisk`.
+ */
+function toHexRisk(points: BackendHeatmapPoint[]): HexRisk[] {
+  return points.map((point) => ({
+    lat: point.lat,
+    lng: point.lng,
+    risk_score: normalizeRisk(point.total_risk),
+  }));
+}
+
+/**
+ * How much of the city the heatmap loads around the user.
+ *
+ * The full-city endpoint became genuinely heavy once the real dataset landed
+ * (5.099 cells ≈ 266 KB of JSON, versus 12 rows before). Measured against that
+ * data, a 5 km disc is 483 cells ≈ 25 KB — a 10x cut that still covers well
+ * beyond what fits on screen at the zoom levels this app actually uses (14 when
+ * we have the user's location, and any walking route from there).
+ *
+ * Tradeoff, stated plainly: zoomed all the way out to the whole city, only the
+ * area around the user is tinted. If the team decides city-wide coverage at low
+ * zoom matters, the fix is a zoom-aware radius here, or server-side
+ * simplification — not raising this constant, which just re-creates the payload
+ * problem.
+ */
+export const HEATMAP_RADIUS_METERS = 5000;
+
+/**
+ * Fetches the hexagon-risk cells around a location
+ * (GET /api/v1/heatmap/nearby — confirmed query contract lat/lng/radius).
+ * Returns null on failure — never throws.
  *
  * While USE_MOCK_HEATMAP is true, resolves with a local mock hexagon grid.
- *
- * TODO(osman): if the full-city payload turns out too heavy, switch to
- * GET /api/v1/heatmap/nearby (already live) with the user's location + radius.
  */
-export async function getHeatmap(): Promise<HexRisk[] | null> {
+export async function getHeatmap(
+  location: LngLat,
+  radius: number = HEATMAP_RADIUS_METERS
+): Promise<HexRisk[] | null> {
   if (USE_MOCK_HEATMAP) {
     await new Promise((resolve) => setTimeout(resolve, 300));
     return getMockHexRisk();
   }
 
   try {
-    const response = await api.get<BackendHeatmapPoint[]>("/api/v1/heatmap");
-    return response.data.map((point) => ({
-      lat: point.lat,
-      lng: point.lng,
-      risk_score: normalizeRisk(point.total_risk),
-    }));
+    const [lng, lat] = location;
+    const response = await api.get<BackendHeatmapPoint[]>(
+      "/api/v1/heatmap/nearby",
+      { params: { lat, lng, radius } }
+    );
+    return toHexRisk(response.data);
   } catch (error) {
-    logRequestError("getHeatmap (GET /api/v1/heatmap)", error);
+    logRequestError("getHeatmap (GET /api/v1/heatmap/nearby)", error);
     return null;
   }
 }
@@ -327,12 +368,7 @@ export async function getNearbyAlerts(
       "/api/v1/heatmap/nearby",
       { params: { lat, lng, radius: ALERT_RADIUS_METERS } }
     );
-    const points: HexRisk[] = response.data.map((point) => ({
-      lat: point.lat,
-      lng: point.lng,
-      risk_score: normalizeRisk(point.total_risk),
-    }));
-    return riskPointsToAlerts(points, location);
+    return riskPointsToAlerts(toHexRisk(response.data), location);
   } catch (error) {
     logRequestError("getNearbyAlerts (GET /api/v1/heatmap/nearby)", error);
     return null;

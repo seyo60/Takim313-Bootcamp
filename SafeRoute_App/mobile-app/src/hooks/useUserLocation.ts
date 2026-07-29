@@ -101,7 +101,11 @@ export function useUserLocation(): UserLocation {
         }
       } catch (error) {
         // GPS disabled, timeout, etc. Permission was fine but we have no fix.
-        console.error("[useUserLocation] Failed to get position:", error);
+        // warn, not error: this is handled — we fall back to the Chicago demo
+        // centre and the UI says so. console.error trips React Native's
+        // full-screen red LogBox, which makes a recovered condition look like a
+        // crash. Same rule the API layer follows (see logRequestError).
+        console.warn("[useUserLocation] Failed to get position:", error);
         if (!cancelled) {
           setState({
             coordinate: null,
