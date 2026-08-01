@@ -71,26 +71,26 @@ Uygulama Mapbox haritası üzerinde yer arama, konumdan veya haritadan başlang�
 
 <br>
 
-| Özellik | Açıklama |
-| ------- | -------- |
+| Özellik                            | Açıklama                                                                                        |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------- |
 | **Onboarding ve misafir deneyimi** | Uygulamayı tanıtan ilk akış; konum izni isteğe bağlı; misafir olarak harita/rota kullanılabilir |
-| **Mapbox harita ve konum** | Chicago odaklı yaya haritası, GPS konumu, “Konumum” ve kuzeye döndürme |
-| **Arama ve yol tarifi** | Yer/adres arama; başlangıç ve varışı konumdan veya haritadan seçerek rota oluşturma |
-| **Üç rota profili** | En Kısa, Dengeli ve Daha Güvenli alternatifleri; mesafe, süre ve risk skoru karşılaştırması |
-| **Rota güvenlik özeti** | En kısa yola göre risk azalması / ekstra mesafe; suç–aydınlatma–canlı ihbar dökümü |
-| **LLM risk açıklaması** | Seçilen rota ve sokak/hücre için kısa, anlaşılır Türkçe risk açıklaması ve faktörler |
-| **H3 risk ısı haritası** | Toplam, suç, aydınlatma ve canlı kanallar; hücre detayında risk skorları |
-| **Sokak / hücre inceleme** | Haritaya dokunarak risk seviyesi, veri yok uyarısı ve buradan/buraya rota planlama |
-| **Canlı navigasyon** | Adım adım yönlendirme, kalan mesafe/süre, sapmada yeniden rota, varış bildirimi |
-| **Sesli yönlendirme** | Navigasyonda sesli talimat; Türkçe / İngilizce seçeneği |
-| **SOS ve ihbar gönderme** | Girişli kullanıcı konumuna ihbar bırakır; kategori + metin; acil SOS yolu |
-| **İhbar içerik analizi (NLP)** | Güvenlik sinyali taşımayan / konu dışı metinleri eleyerek bildirime sokmaz |
-| **Yakın alan tanık doğrulama** | Geçerli ihbar yakındaki kullanıcılara sorulur; onaylanınca haritada yayınlanır |
-| **Doğrulanmış bildirimler** | Onaylı olaylar uygulama içi uyarı ve bildirimle duyurulur; profilden aç/kapa |
-| **Topluluk ihbar katmanı** | Son bir saatteki doğrulanmış ihbarları anonim marker olarak gösterir ve filtreler |
-| **İhbarlarım** | Kullanıcının kendi ihbar geçmişi; durum, kategori, tarih ve metin takibi |
-| **Hesap ve profil** | E-posta ile giriş/kayıt, parola sıfırlama, çıkış, hesap silme talebi / iptali |
-| **Chicago odaklı altyapı** | Yaya ağı + suç/aydınlatma verisi + H3 risk modeli; doğrulanan ihbar canlı riske işler |
+| **Mapbox harita ve konum**         | Chicago odaklı yaya haritası, GPS konumu, “Konumum” ve kuzeye döndürme                          |
+| **Arama ve yol tarifi**            | Yer/adres arama; başlangıç ve varışı konumdan veya haritadan seçerek rota oluşturma             |
+| **Üç rota profili**                | En Kısa, Dengeli ve Daha Güvenli alternatifleri; mesafe, süre ve risk skoru karşılaştırması     |
+| **Rota güvenlik özeti**            | En kısa yola göre risk azalması / ekstra mesafe; suç–aydınlatma–canlı ihbar dökümü              |
+| **LLM risk açıklaması**            | Seçilen rota ve sokak/hücre için kısa, anlaşılır Türkçe risk açıklaması ve faktörler            |
+| **H3 risk ısı haritası**           | Toplam, suç, aydınlatma ve canlı kanallar; hücre detayında risk skorları                        |
+| **Sokak / hücre inceleme**         | Haritaya dokunarak risk seviyesi, veri yok uyarısı ve buradan/buraya rota planlama              |
+| **Canlı navigasyon**               | Adım adım yönlendirme, kalan mesafe/süre, sapmada yeniden rota, varış bildirimi                 |
+| **Sesli yönlendirme**              | Navigasyonda sesli talimat; Türkçe / İngilizce seçeneği                                         |
+| **SOS ve ihbar gönderme**          | Girişli kullanıcı konumuna ihbar bırakır; kategori + metin; acil SOS yolu                       |
+| **İhbar içerik analizi (NLP)**     | Güvenlik sinyali taşımayan / konu dışı metinleri eleyerek bildirime sokmaz                      |
+| **Yakın alan tanık doğrulama**     | Geçerli ihbar yakındaki kullanıcılara sorulur; onaylanınca haritada yayınlanır                  |
+| **Doğrulanmış bildirimler**        | Onaylı olaylar uygulama içi uyarı ve bildirimle duyurulur; profilden aç/kapa                    |
+| **Topluluk ihbar katmanı**         | Son bir saatteki doğrulanmış ihbarları anonim marker olarak gösterir ve filtreler               |
+| **İhbarlarım**                     | Kullanıcının kendi ihbar geçmişi; durum, kategori, tarih ve metin takibi                        |
+| **Hesap ve profil**                | E-posta ile giriş/kayıt, parola sıfırlama, çıkış, hesap silme talebi / iptali                   |
+| **Chicago odaklı altyapı**         | Yaya ağı + suç/aydınlatma verisi + H3 risk modeli; doğrulanan ihbar canlı riske işler           |
 
 </details>
 
@@ -276,7 +276,6 @@ Sprint 2 aşamasında ürün stratejisini netleştirmek adına ilgili dokümanta
   [Product Backlog](https://app.notion.com/p/takim313/394780ef363a8083b92feb12eef90a2f?v=c0f780ef363a82ebae3c089f7788f93f&source=copy_link)
   <img width="1583" height="980" alt="image" src="https://github.com/user-attachments/assets/28d55439-7ee1-4230-8c2d-9e8e72780fcb" />
 
-
 </details>
 
 <details>
@@ -358,13 +357,13 @@ Belirlenen görev dağılımı doğrultusunda Sprint 2 için ayrılan iş yükü
 
 Sprint 2 Notion panosundaki kart atamalarına göre iş dağılımı şöyle yapılandırıldı:
 
-| Üye            | Sorumluluk                                                                 |
-| -------------- | -------------------------------------------------------------------------- |
-| **Seda Nur**   | Lean Canvas, Persona, Kullanıcı Senaryosu, Figma wireframe tasarımı        |
-| **Merve**      | NLP modeli araştırması, yeni veri setlerinin eklenmesi                     |
-| **Mehmet Ali** | Sokak güvenlik açıklaması (LLM), anlık ihbar analizi ve yakın kullanıcı bildirimi (LLM); Lean Canvas’a katkı |
+| Üye            | Sorumluluk                                                                                                                                                                                                |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Seda Nur**   | Lean Canvas, Persona, Kullanıcı Senaryosu, Figma wireframe tasarımı                                                                                                                                       |
+| **Merve**      | NLP modeli araştırması, yeni veri setlerinin eklenmesi                                                                                                                                                    |
+| **Mehmet Ali** | Sokak güvenlik açıklaması (LLM), anlık ihbar analizi ve yakın kullanıcı bildirimi (LLM); Lean Canvas’a katkı                                                                                              |
 | **Seymen**     | Backend: Alembic/seed (BE-01), risk ağırlıklı rota motoru (BE-02), canlı ihbar risk hattı (BE-03), API kontrat uyumu (BE-04), Docker/Render/Supabase (BE-05), otomasyon testleri ve dokümantasyon (BE-06) |
-| **Osman**      | Mobil: rota görselleştirme, LLM risk açıklaması UI, heatmap entegrasyonu, URGENT butonu, yakın kullanıcı bildirimi UI, fallback UI, GPS/acil yönlendirme ve mock→gerçek API geçişleri |
+| **Osman**      | Mobil: rota görselleştirme, LLM risk açıklaması UI, heatmap entegrasyonu, URGENT butonu, yakın kullanıcı bildirimi UI, fallback UI, GPS/acil yönlendirme ve mock→gerçek API geçişleri                     |
 
 </details>
 
@@ -388,7 +387,17 @@ Sprint 2 daily scrum ekran görüntüleri proje deposunda arşivlenmiştir:
 
 <br>
 
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
+
+- **Rota ve harita ekranları:**
+
+![Dengeli rota](Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.12%20(1).jpeg)
+
+![Daha güvenli rota](Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.12.jpeg)
+
+![Tanık bildirimi](Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.14%20(4).jpeg)
+
+![Harita katmanları](Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.14%20(6).jpeg)
 
 </details>
 
