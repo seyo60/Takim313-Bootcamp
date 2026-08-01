@@ -391,13 +391,13 @@ Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
 
 - **Rota ve harita ekranları:**
 
-![Dengeli rota](Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.12%20(1).jpeg)
+<img width="280" alt="Dengeli rota" src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.12%20(1).jpeg" />
 
-![Daha güvenli rota](Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.12.jpeg)
+<img width="280" alt="Daha güvenli rota" src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.12.jpeg" />
 
-![Tanık bildirimi](Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.14%20(4).jpeg)
+<img width="280" alt="Tanık bildirimi" src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.14%20(4).jpeg" />
 
-![Harita katmanları](Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.14%20(6).jpeg)
+<img width="280" alt="Harita katmanları" src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.14%20(6).jpeg" />
 
 </details>
 
