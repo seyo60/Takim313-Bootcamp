@@ -347,6 +347,34 @@ Belirlenen görev dağılımı doğrultusunda Sprint 2 için ayrılan iş yükü
 
 </details>
 
+<details>
+<summary><strong>📋 Backlog Dağıtma Mantığı (İş Dağılımı)</strong></summary>
+
+<br>
+
+Sprint 2 Notion panosundaki kart atamalarına göre iş dağılımı şöyle yapılandırıldı:
+
+| Üye            | Sorumluluk                                                                 |
+| -------------- | -------------------------------------------------------------------------- |
+| **Seda Nur**   | Lean Canvas, Persona, Kullanıcı Senaryosu, Figma wireframe tasarımı        |
+| **Merve**      | NLP modeli araştırması, yeni veri setlerinin eklenmesi                     |
+| **Mehmet Ali** | Sokak güvenlik açıklaması (LLM), anlık ihbar analizi ve yakın kullanıcı bildirimi (LLM); Lean Canvas’a katkı |
+| **Seymen**     | Backend: Alembic/seed (BE-01), risk ağırlıklı rota motoru (BE-02), canlı ihbar risk hattı (BE-03), API kontrat uyumu (BE-04), Docker/Render/Supabase (BE-05), otomasyon testleri ve dokümantasyon (BE-06) |
+| **Osman**      | Mobil: rota görselleştirme, LLM risk açıklaması UI, heatmap entegrasyonu, URGENT butonu, yakın kullanıcı bildirimi UI, fallback UI, GPS/acil yönlendirme ve mock→gerçek API geçişleri |
+
+</details>
+
+<details>
+<summary><strong>💬 Daily Scrum Notları</strong></summary>
+
+<br>
+
+Sprint 2 daily scrum ekran görüntüleri proje deposunda arşivlenmiştir:
+
+[Sprint 2 Daily Scrum](https://github.com/seyo60/Takim313-Bootcamp/tree/main/Sprint_2/Sprint2_Daily_Scrum)
+
+</details>
+
 ---
 
 ## 🏃 Sprint 3
