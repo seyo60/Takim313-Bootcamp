@@ -46,16 +46,20 @@
 
 ### Hedef Kitle
 
-- Seyahat eden bireyler
-- Kadınlar
-- Öğrenciler
+- Yalnız yürüyen veya geç saatlerde yolda olan kullanıcılar
+- Kadınlar ve güvenlik kaygısı yüksek yaya yolcular
+- Öğrenciler ve kampüs–şehir arası yürüyüş yapanlar
+- Turistler ve şehri bilmeyen ziyaretçiler
+- Mahalle güvenliğine katkı vermek isteyen yerel topluluk üyeleri
 
 </td>
 <td width="50%">
 
 ### Ürün Açıklaması
 
-Kentsel alanlarda yalnız seyahat eden bireylerin fiziksel güvenliğini korumayı amaçlayan yapay zeka destekli bir uygulamadır. Klasik haritaların aksine yalnızca en kısa yolu değil; güvenlik verilerini, sokak aydınlatmasını ve anlık tehlike bildirimlerini işleyerek **En Güvenli Yaşayan Rota** alternatifini sunar.
+SafeRoute, Chicago’da yaya güvenliğini merkeze alan bir mobil navigasyon ürünüdür. Klasik haritaların “en kısa yol” odaklı yaklaşımının aksine; suç yoğunluğu, sokak aydınlatması ve topluluk ihbarlarını birleştirerek kullanıcıya **en kısa**, **dengeli** ve **daha güvenli** rota alternatifleri sunar.
+
+Kullanıcı bir tehlike gördüğünde uygulamadan ihbar bırakır. Metin önce güvenlik sinyali taşıyıp taşımadığına göre analiz edilir; konu dışı içerikler sisteme alınmaz. Geçerli ihbar, yaklaşık **1 km** içindeki kullanıcılara tanık sorusu olarak iletilir (**Gördüm / Görmedim / Emin değilim**). Bir kişi **Gördüm** dediğinde ihbar doğrulanır, haritada herkese görünür hale gelir ve canlı risk katmanına yansır. Böylece rota önerileri yalnızca tarihsel veriyle değil, anlık ve doğrulanmış sinyallerle de güncellenir.
 
 </td>
 </tr>
@@ -66,13 +70,16 @@ Kentsel alanlarda yalnız seyahat eden bireylerin fiziksel güvenliğini korumay
 
 <br>
 
-| Özellik                           | Açıklama                                                                                               |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| **AI-Powered Safe Routing**       | Geçmiş suç verileri ile altyapı eksikliklerini harmanlayarak en güvenli rotayı hesaplar                |
-| **Real-Time Risk Mapping**        | NLP ile analiz edilen ihbarları H3 altıgen mimarisiyle saniyeler içinde risk ağırlığına dönüştürür     |
-| **Community-Driven Alerts**       | GPS takibi ile rota üzerindeki dinamik tehlikeler için proaktif bildirimler üretir                     |
-| **Interactive Mapbox Experience** | Chicago başta olmak üzere karmaşık şehir ağlarında akıcı harita navigasyonu                            |
-| **Asynchronous Data Sync**        | Dockerize PostGIS + FastAPI ile binlerce sokak segmentinin risk skorunu milisaniyeler içinde günceller |
+| Özellik                              | Açıklama                                                                                                                                     |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Üç profilli güvenli rota**         | En kısa, dengeli ve daha güvenli (safer) rotaları yan yana sunar; güvenli rota için ekstra mesafe ve risk azalmasını anlaşılır şekilde gösterir |
+| **Canlı risk ısı haritası**          | Suç, aydınlatma ve toplam risk kanallarını H3 hücreleriyle haritada görselleştirir; sokak/hücre bazında risk bağlamı sağlar                 |
+| **Akıllı ihbar + içerik filtresi**   | İhbar metnini analiz eder; siyaset, spam veya güvenlikle ilgisiz içerikleri reddeder, yalnızca anlamlı güvenlik sinyallerini işler           |
+| **1 km tanık doğrulama**             | Geçerli ihbar yakındaki kullanıcılara sorulur; tek bir “Gördüm” onayıyla olay doğrulanır ve haritada yayınlanır                              |
+| **Doğrulanmış anlık bildirimler**    | Onaylanan olaylar yakındaki kullanıcılara duyurulur; uygulama içi modal ve bildirim ayarı (aç/kapa) ile kontrol edilir                       |
+| **Topluluk ihbar katmanı**           | Son bir saatteki doğrulanmış ihbarları haritada anonim olarak gösterir; kullanıcı kendi ihbar geçmişini “İhbarlarım”dan takip eder           |
+| **Mapbox arama ve yol tarifi**       | Konumundan veya haritadan başlangıç/varış seçerek güvenli rota oluşturur; Chicago odaklı akıcı harita deneyimi sunar                         |
+| **Hesap ve kişisel takip**           | Supabase oturumu ile giriş; ihbarların hesaba bağlanması, profil ve hesap yönetimi                                                           |
 
 </details>
 
