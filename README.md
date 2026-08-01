@@ -46,20 +46,21 @@
 
 ### Hedef Kitle
 
-- Yalnız yürüyen veya geç saatlerde yolda olan kullanıcılar
-- Kadınlar ve güvenlik kaygısı yüksek yaya yolcular
-- Öğrenciler ve kampüs–şehir arası yürüyüş yapanlar
+- Yalnız veya geç saatlerde yürüyen kullanıcılar
+- Güvenlik kaygısı yüksek yaya yolcular (özellikle kadınlar)
+- Öğrenciler ve kampüs–şehir arasında yürüyenler
 - Turistler ve şehri bilmeyen ziyaretçiler
-- Mahalle güvenliğine katkı vermek isteyen yerel topluluk üyeleri
+- Mahalle güvenliğine katkı vermek isteyen yerel kullanıcılar
+- Misafir olarak harita/rota deneyip gerektiğinde hesap açan kullanıcılar
 
 </td>
 <td width="50%">
 
 ### Ürün Açıklaması
 
-SafeRoute, Chicago’da yaya güvenliğini merkeze alan bir mobil navigasyon ürünüdür. Klasik haritaların “en kısa yol” odaklı yaklaşımının aksine; suç yoğunluğu, sokak aydınlatması ve topluluk ihbarlarını birleştirerek kullanıcıya **en kısa**, **dengeli** ve **daha güvenli** rota alternatifleri sunar.
+**SafeRoute**, Chicago’da yaya güvenliğini merkeze alan yapay zeka destekli bir mobil navigasyon uygulamasıdır. Klasik haritaların yalnızca mesafe odaklı yaklaşımının aksine; suç yoğunluğu, sokak aydınlatması ve topluluk ihbarlarını birleştirerek kullanıcıya **en kısa**, **dengeli** ve **daha güvenli** rota alternatifleri sunar.
 
-Kullanıcı bir tehlike gördüğünde uygulamadan ihbar bırakır. Metin önce güvenlik sinyali taşıyıp taşımadığına göre analiz edilir; konu dışı içerikler sisteme alınmaz. Geçerli ihbar, yaklaşık **1 km** içindeki kullanıcılara tanık sorusu olarak iletilir (**Gördüm / Görmedim / Emin değilim**). Bir kişi **Gördüm** dediğinde ihbar doğrulanır, haritada herkese görünür hale gelir ve canlı risk katmanına yansır. Böylece rota önerileri yalnızca tarihsel veriyle değil, anlık ve doğrulanmış sinyallerle de güncellenir.
+Uygulama Mapbox haritası üzerinde yer arama, konumdan veya haritadan başlangıç/varış seçimi, risk ısı haritası, doğrulanmış ihbar katmanı ve adım adım canlı navigasyon sağlar. Rota ve sokak riskleri LLM ile kısa Türkçe açıklamalara dönüştürülür; ihbar metinleri NLP ile elenir, geçerli sinyaller yakındaki kullanıcılara sorulur ve onaylanan olaylar haritaya ile canlı riske yansır. Güvenlik skoru bir rehberdir; kesin güvenlik garantisi değildir.
 
 </td>
 </tr>
@@ -70,16 +71,26 @@ Kullanıcı bir tehlike gördüğünde uygulamadan ihbar bırakır. Metin önce 
 
 <br>
 
-| Özellik                              | Açıklama                                                                                                                                     |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Üç profilli güvenli rota**         | En kısa, dengeli ve daha güvenli (safer) rotaları yan yana sunar; güvenli rota için ekstra mesafe ve risk azalmasını anlaşılır şekilde gösterir |
-| **Canlı risk ısı haritası**          | Suç, aydınlatma ve toplam risk kanallarını H3 hücreleriyle haritada görselleştirir; sokak/hücre bazında risk bağlamı sağlar                 |
-| **Akıllı ihbar + içerik filtresi**   | İhbar metnini analiz eder; siyaset, spam veya güvenlikle ilgisiz içerikleri reddeder, yalnızca anlamlı güvenlik sinyallerini işler           |
-| **1 km tanık doğrulama**             | Geçerli ihbar yakındaki kullanıcılara sorulur; tek bir “Gördüm” onayıyla olay doğrulanır ve haritada yayınlanır                              |
-| **Doğrulanmış anlık bildirimler**    | Onaylanan olaylar yakındaki kullanıcılara duyurulur; uygulama içi modal ve bildirim ayarı (aç/kapa) ile kontrol edilir                       |
-| **Topluluk ihbar katmanı**           | Son bir saatteki doğrulanmış ihbarları haritada anonim olarak gösterir; kullanıcı kendi ihbar geçmişini “İhbarlarım”dan takip eder           |
-| **Mapbox arama ve yol tarifi**       | Konumundan veya haritadan başlangıç/varış seçerek güvenli rota oluşturur; Chicago odaklı akıcı harita deneyimi sunar                         |
-| **Hesap ve kişisel takip**           | Supabase oturumu ile giriş; ihbarların hesaba bağlanması, profil ve hesap yönetimi                                                           |
+| Özellik | Açıklama |
+| ------- | -------- |
+| **Onboarding ve misafir deneyimi** | Uygulamayı tanıtan ilk akış; konum izni isteğe bağlı; misafir olarak harita/rota kullanılabilir |
+| **Mapbox harita ve konum** | Chicago odaklı yaya haritası, GPS konumu, “Konumum” ve kuzeye döndürme |
+| **Arama ve yol tarifi** | Yer/adres arama; başlangıç ve varışı konumdan veya haritadan seçerek rota oluşturma |
+| **Üç rota profili** | En Kısa, Dengeli ve Daha Güvenli alternatifleri; mesafe, süre ve risk skoru karşılaştırması |
+| **Rota güvenlik özeti** | En kısa yola göre risk azalması / ekstra mesafe; suç–aydınlatma–canlı ihbar dökümü |
+| **LLM risk açıklaması** | Seçilen rota ve sokak/hücre için kısa, anlaşılır Türkçe risk açıklaması ve faktörler |
+| **H3 risk ısı haritası** | Toplam, suç, aydınlatma ve canlı kanallar; hücre detayında risk skorları |
+| **Sokak / hücre inceleme** | Haritaya dokunarak risk seviyesi, veri yok uyarısı ve buradan/buraya rota planlama |
+| **Canlı navigasyon** | Adım adım yönlendirme, kalan mesafe/süre, sapmada yeniden rota, varış bildirimi |
+| **Sesli yönlendirme** | Navigasyonda sesli talimat; Türkçe / İngilizce seçeneği |
+| **SOS ve ihbar gönderme** | Girişli kullanıcı konumuna ihbar bırakır; kategori + metin; acil SOS yolu |
+| **İhbar içerik analizi (NLP)** | Güvenlik sinyali taşımayan / konu dışı metinleri eleyerek bildirime sokmaz |
+| **Yakın alan tanık doğrulama** | Geçerli ihbar yakındaki kullanıcılara sorulur; onaylanınca haritada yayınlanır |
+| **Doğrulanmış bildirimler** | Onaylı olaylar uygulama içi uyarı ve bildirimle duyurulur; profilden aç/kapa |
+| **Topluluk ihbar katmanı** | Son bir saatteki doğrulanmış ihbarları anonim marker olarak gösterir ve filtreler |
+| **İhbarlarım** | Kullanıcının kendi ihbar geçmişi; durum, kategori, tarih ve metin takibi |
+| **Hesap ve profil** | E-posta ile giriş/kayıt, parola sıfırlama, çıkış, hesap silme talebi / iptali |
+| **Chicago odaklı altyapı** | Yaya ağı + suç/aydınlatma verisi + H3 risk modeli; doğrulanan ihbar canlı riske işler |
 
 </details>
 
