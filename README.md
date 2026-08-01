@@ -110,32 +110,6 @@ Uygulama Mapbox haritası üzerinde yer arama, konumdan veya haritadan başlang�
 ## 🏃 Sprint 1
 
 <details open>
-<summary><strong>📋 Backlog Dağıtma Mantığı (İş Dağılımı)</strong></summary>
-
-<br>
-
-Görev dağılımını ekip üyelerimizin uzmanlık alanlarına, ilgi duydukları teknoloji yığınlarına ve projeyi en hızlı şekilde ayağa kaldırma stratejimize göre yapılandırdık:
-
-| Üye            | Sorumluluk                                                |
-| -------------- | --------------------------------------------------------- |
-| **Seda Nur**   | Figma UX/UI, Persona ve Lean Canvas dokümantasyonu        |
-| **Merve**      | İhbar analizi ve risk skoru üreten NLP modeli eğitimi     |
-| **Mehmet Ali** | LLM entegrasyonu, veri boru hattı ve harita algoritmaları |
-| **Seymen**     | Backend (API / Veritabanı) geliştirmeleri                 |
-| **Osman**      | Frontend (React Native / Mapbox) arayüzü                  |
-
-</details>
-
-<details>
-<summary><strong>💬 Daily Scrum Notları</strong></summary>
-
-<br>
-
-Takım içi iletişimimizi çevik (agile) prensiplere uygun olarak WhatsApp ve Meet üzerinden yürüttük. Toplantılarda herkes _"Dün ne yaptım?"_, _"Bugün ne yapacağım?"_ ve _"Beni engelleyen bir sorun var mı?"_ sorularına kısa cevaplar vererek birbirini güncelledi. Ekip üyelerinin müsaitlik durumuna göre yapılan kısa senkronizasyon toplantılarına ait ekran görüntüleri proje dosyalarımız arasında yer almaktadır.
-
-</details>
-
-<details>
 <summary><strong>📱 Ürün Durumu</strong></summary>
 
 <br>
@@ -175,21 +149,30 @@ Takım içi iletişimimizi çevik (agile) prensiplere uygun olarak WhatsApp ve M
 </details>
 
 <details>
-<summary><strong>🎯 Puan & Tamamlama</strong></summary>
+<summary><strong>🎯 Sprint İçinde Tamamlanması Beklenen Puan</strong></summary>
 
 <br>
+
+- 250 Puan
+
+</details>
+
+<details>
+<summary><strong>📈 Puan Tamamlama Mantığı</strong></summary>
+
+<br>
+
+Belirlenen temel altyapı ve tasarım hedefleri doğrultusunda Sprint 1 için planlanan 250 puanlık iş yükü eksiksiz olarak tamamlanmıştır.
 
 | Metrik         | Değer         |
 | -------------- | ------------- |
 | **Hedef Puan** | 250           |
 | **Durum**      | ✅ Tamamlandı |
 
-Belirlenen temel altyapı ve tasarım hedefleri doğrultusunda Sprint 1 için planlanan 250 puanlık iş yükü eksiksiz olarak tamamlanmıştır.
-
 </details>
 
 <details>
-<summary><strong>🔍 Sprint Review</strong></summary>
+<summary><strong>🔍 Sprint Gözden Geçirilmesi (Sprint Review)</strong></summary>
 
 <br>
 
@@ -202,24 +185,55 @@ Belirlenen temel altyapı ve tasarım hedefleri doğrultusunda Sprint 1 için pl
 - iOS ve Android işletim sistemleri için GPS konum izin kodları başarıyla eklendi.
 - Figma üzerinde uygulamanın UX ve UI tasarımları oluşturuldu.
 
-**Katılımcılar:** Mehmet, Osman, Seymen, Merve, Seda Nur
+</details>
+
+<details>
+<summary><strong>👥 Sprint Gözden Geçirme Katılımcıları</strong></summary>
+
+<br>
+
+- Mehmet, Osman, Seymen, Merve, Seda Nur
 
 </details>
 
 <details>
-<summary><strong>🔄 Sprint Retrospective</strong></summary>
+<summary><strong>🔄 Sprint Retrospektifi (Sprint Retrospective)</strong></summary>
 
 <br>
 
-**Süreç Değerlendirmesi:** Altyapı geliştirirken şelale (waterfall) tuzağına düştüğümüzü fark ettik. Bir sonraki sprintte **Contract-First** yapıya geçme ve **mock** verilerle paralel çalışma kararı aldık.
+- **Süreç Değerlendirmesi:** Altyapı geliştirirken şelale (waterfall) tuzağına düştüğümüzü fark ettik. Bir sonraki sprintte **Contract-First** yapıya geçme ve **mock** verilerle paralel çalışma kararı aldık.
+- **Gelecek Sprint Planları:**
+  - Mobil cihazlardan alınacak GPS koordinatları ile backend'e POST istekleri
+  - Axios ile mock rota çekme
+  - Kullanıcı form alanları ve TextArea state kontrolleri
+  - Figma tasarımına uygun UI/UX yerleşimleri
+  - Toast/Alert bildirim mekanizmaları
 
-**Gelecek Sprint Planları:**
+</details>
 
-- Mobil cihazlardan alınacak GPS koordinatları ile backend'e POST istekleri
-- Axios ile mock rota çekme
-- Kullanıcı form alanları ve TextArea state kontrolleri
-- Figma tasarımına uygun UI/UX yerleşimleri
-- Toast/Alert bildirim mekanizmaları
+<details>
+<summary><strong>📋 Backlog Dağıtma Mantığı (İş Dağılımı)</strong></summary>
+
+<br>
+
+Görev dağılımını ekip üyelerimizin uzmanlık alanlarına, ilgi duydukları teknoloji yığınlarına ve projeyi en hızlı şekilde ayağa kaldırma stratejimize göre yapılandırdık:
+
+| Üye            | Sorumluluk                                                |
+| -------------- | --------------------------------------------------------- |
+| **Seda Nur**   | Figma UX/UI, Persona ve Lean Canvas dokümantasyonu        |
+| **Merve**      | İhbar analizi ve risk skoru üreten NLP modeli eğitimi     |
+| **Mehmet Ali** | LLM entegrasyonu, veri boru hattı ve harita algoritmaları |
+| **Seymen**     | Backend (API / Veritabanı) geliştirmeleri                 |
+| **Osman**      | Frontend (React Native / Mapbox) arayüzü                  |
+
+</details>
+
+<details>
+<summary><strong>💬 Daily Scrum Notları</strong></summary>
+
+<br>
+
+Takım içi iletişimimizi çevik (agile) prensiplere uygun olarak WhatsApp ve Meet üzerinden yürüttük. Toplantılarda herkes _"Dün ne yaptım?"_, _"Bugün ne yapacağım?"_ ve _"Beni engelleyen bir sorun var mı?"_ sorularına kısa cevaplar vererek birbirini güncelledi. Ekip üyelerinin müsaitlik durumuna göre yapılan kısa senkronizasyon toplantılarına ait ekran görüntüleri proje dosyalarımız arasında yer almaktadır.
 
 </details>
 
@@ -338,6 +352,78 @@ Belirlenen görev dağılımı doğrultusunda Sprint 2 için ayrılan iş yükü
 ## 🏃 Sprint 3
 
 <details open>
+<summary><strong>📱 Ürün Durumu</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>📊 Sprint Board Updates </strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>📝 Sprint Notları</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>🎯 Sprint İçinde Tamamlanması Beklenen Puan</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>📈 Puan Tamamlama Mantığı</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>🔍 Sprint Gözden Geçirilmesi (Sprint Review)</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>👥 Sprint Gözden Geçirme Katılımcıları</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>🔄 Sprint Retrospektifi (Sprint Retrospective)</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
 <summary><strong>📋 Backlog Dağıtma Mantığı (İş Dağılımı)</strong></summary>
 
 <br>
@@ -348,42 +434,6 @@ Belirlenen görev dağılımı doğrultusunda Sprint 2 için ayrılan iş yükü
 
 <details>
 <summary><strong>💬 Daily Scrum Notları</strong></summary>
-
-<br>
-
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
-
-</details>
-
-<details>
-<summary><strong>📊 Sprint Board Updates</strong></summary>
-
-<br>
-
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
-
-</details>
-
-<details>
-<summary><strong>📱 Ürün Durumu</strong></summary>
-
-<br>
-
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
-
-</details>
-
-<details>
-<summary><strong>🔍 Sprint Review</strong></summary>
-
-<br>
-
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
-
-</details>
-
-<details>
-<summary><strong>🔄 Sprint Retrospective</strong></summary>
 
 <br>
 
