@@ -235,6 +235,10 @@ Görev dağılımını ekip üyelerimizin uzmanlık alanlarına, ilgi duyduklar�
 
 Takım içi iletişimimizi çevik (agile) prensiplere uygun olarak WhatsApp ve Meet üzerinden yürüttük. Toplantılarda herkes _"Dün ne yaptım?"_, _"Bugün ne yapacağım?"_ ve _"Beni engelleyen bir sorun var mı?"_ sorularına kısa cevaplar vererek birbirini güncelledi. Ekip üyelerinin müsaitlik durumuna göre yapılan kısa senkronizasyon toplantılarına ait ekran görüntüleri proje dosyalarımız arasında yer almaktadır.
 
+Sprint 1 daily scrum ekran görüntüleri proje deposunda arşivlenmiştir:
+
+[Sprint 1 Daily Scrum](https://github.com/seyo60/Takim313-Bootcamp/tree/main/Sprint_1/Sprint1_Daily_Scrum)
+
 </details>
 
 ---
@@ -368,7 +372,7 @@ Sprint 2 Notion panosundaki kart atamalarına göre iş dağılımı şöyle yap
 <summary><strong>💬 Daily Scrum Notları</strong></summary>
 
 <br>
-
+Takım içi iletişimimizi çevik (agile) prensiplere uygun olarak WhatsApp ve Meet üzerinden yürüttük. Toplantılarda herkes _"Dün ne yaptım?"_, _"Bugün ne yapacağım?"_ ve _"Beni engelleyen bir sorun var mı?"_ sorularına kısa cevaplar vererek birbirini güncelledi. Ekip üyelerinin müsaitlik durumuna göre yapılan kısa senkronizasyon toplantılarına ait ekran görüntüleri proje dosyalarımız arasında yer almaktadır.
 Sprint 2 daily scrum ekran görüntüleri proje deposunda arşivlenmiştir:
 
 [Sprint 2 Daily Scrum](https://github.com/seyo60/Takim313-Bootcamp/tree/main/Sprint_2/Sprint2_Daily_Scrum)
