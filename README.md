@@ -469,7 +469,11 @@ Sprint 2 daily scrum ekran görüntüleri proje deposunda arşivlenmiştir:
 
 <br>
 
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+Takım içi iletişimimizi çevik (agile) prensiplere uygun olarak WhatsApp ve Meet üzerinden yürüttük. Toplantılarda herkes _"Dün ne yaptım?"_, _"Bugün ne yapacağım?"_ ve _"Beni engelleyen bir sorun var mı?"_ sorularına kısa cevaplar vererek birbirini güncelledi. Ekip üyelerinin müsaitlik durumuna göre yapılan kısa senkronizasyon toplantılarına ait ekran görüntüleri proje dosyalarımız arasında yer almaktadır.
+
+Sprint 3 daily scrum ekran görüntüleri proje deposunda arşivlenmiştir:
+
+[Sprint 3 Daily Scrum](https://github.com/seyo60/Takim313-Bootcamp/tree/main/Sprint_3/Sprint3_Daily_Scrum)
 
 </details>
 
