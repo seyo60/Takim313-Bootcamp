@@ -76,6 +76,16 @@ Kentsel alanlarda yalnız seyahat eden bireylerin fiziksel güvenliğini korumay
 
 </details>
 
+<details>
+<summary><strong>📋 Product Backlog</strong></summary>
+
+<br>
+
+Ürün backlog'u Notion üzerinde takip edilmektedir:
+
+[![Product Backlog](https://img.shields.io/badge/Notion-Product%20Backlog-000000?style=for-the-badge&logo=notion&logoColor=white)](https://app.notion.com/p/takim313/394780ef363a8083b92feb12eef90a2f?v=c0f780ef363a82ebae3c089f7788f93f&source=copy_link)
+
+</details>
 
 ---
 
@@ -309,12 +319,57 @@ Belirlenen görev dağılımı doğrultusunda Sprint 2 için ayrılan iş yükü
 
 ## 🏃 Sprint 3
 
-<details>
-<summary><strong>⏳ Sprint 3 — Bekleniyor</strong></summary>
+<details open>
+<summary><strong>📋 Backlog Dağıtma Mantığı (İş Dağılımı)</strong></summary>
 
 <br>
 
-> _Bu bölüm Sprint 3 başladığında güncellenecektir._
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>💬 Daily Scrum Notları</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>📊 Sprint Board Updates</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>📱 Ürün Durumu</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>🔍 Sprint Review</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+
+</details>
+
+<details>
+<summary><strong>🔄 Sprint Retrospective</strong></summary>
+
+<br>
+
+> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
 
 </details>
 
