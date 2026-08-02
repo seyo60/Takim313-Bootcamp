@@ -388,17 +388,23 @@ Sprint 2 daily scrum ekran görüntüleri proje deposunda arşivlenmiştir:
 
 <br>
 
-Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
+Sprint 3 aşamasında tamamlanan mobil uygulama ekran görüntüleri aşağıdadır:
 
-- **Rota ve harita ekranları:**
+<div align="center">
 
-<img width="280" alt="Dengeli rota" src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.12%20(1).jpeg" />
+| Rota Planlama & Karşılaştırma | H3 Risk Isı Haritası | Canlı Navigasyon |
+| :---: | :---: | :---: |
+| <img src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-02%20at%2023.30.10.jpeg" width="250" alt="Daha Güvenli Rota" /> | <img src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-02%20at%2023.30.10%20(5).jpeg" width="250" alt="H3 Heatmap Katmanı" /> | <img src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-02%20at%2023.30.10%20(6).jpeg" width="250" alt="Adım Adım Canlı Navigasyon" /> |
+| **Daha Güvenli Rota Seçeneği** | **H3 Risk Isı Haritası & Rota** | **Canlı Yürüyüş Navigasyonu** |
 
-<img width="280" alt="Daha güvenli rota" src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.12.jpeg" />
+<br>
 
-<img width="280" alt="Tanık bildirimi" src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.14%20(4).jpeg" />
+| Tanık Doğrulama Pop-up | Doğrulanmış İhbar Bildirimi | İhbar Gönder & SOS |
+| :---: | :---: | :---: |
+| <img src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-02%20at%2023.30.11%20(1).jpeg" width="250" alt="Tanık Doğrulama" /> | <img src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-02%20at%2023.30.11%20(4).jpeg" width="250" alt="Doğrulanmış İhbar" /> | <img src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-02%20at%2023.30.10%20(1).jpeg" width="250" alt="İhbar Formu ve SOS" /> |
+| **Yakın Alan Tanık Sorgusu** | **Doğrulanmış Canlı İhbar** | **İhbar Formu & SOS** |
 
-<img width="280" alt="Harita katmanları" src="Sprint_3/Sprint3_App_ss/WhatsApp%20Image%202026-08-01%20at%2021.07.14%20(6).jpeg" />
+</div>
 
 </details>
 
