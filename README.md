@@ -409,9 +409,13 @@ Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
 
 - **Sprint 3 Notion Panosu (Genel Görünüm ve Biten İşler):**
   [SafeRoute - Sprint 3 Panosu](https://app.notion.com/p/takim313/0ff4e2d8c3fa457f8012d127e48196e5?v=3b0780ef363a81cfa9c5000c4822e9c6)
-
-  <!-- Sprint 3 board ekran görüntüsü buraya eklenecek -->
-  <!-- Örnek: <img width="1583" height="980" alt="Sprint 3 Notion Panosu" src="..." /> -->
+  
+<a href="https://github.com/user-attachments/assets/6e0734b7-bad2-40b3-b1c4-59166b3f78e0"><img width="420" alt="Sprint 3 board 1" src="https://github.com/user-attachments/assets/6e0734b7-bad2-40b3-b1c4-59166b3f78e0" /></a>
+  <a href="https://github.com/user-attachments/assets/04732aef-df73-4626-9d85-33862091e4b7"><img width="420" alt="Sprint 3 board 2" src="https://github.com/user-attachments/assets/04732aef-df73-4626-9d85-33862091e4b7" /></a>
+  <a href="https://github.com/user-attachments/assets/cb72d1cf-1813-4aaf-ab09-9ac9e6748132"><img width="420" alt="Sprint 3 board 3" src="https://github.com/user-attachments/assets/cb72d1cf-1813-4aaf-ab09-9ac9e6748132" /></a>
+  <a href="https://github.com/user-attachments/assets/3a5f4d02-2f82-4f6e-9fff-547ac44b575a"><img width="420" alt="Sprint 3 board 4" src="https://github.com/user-attachments/assets/3a5f4d02-2f82-4f6e-9fff-547ac44b575a" /></a>
+  <a href="https://github.com/user-attachments/assets/da49de8b-4d37-4ff0-bfdc-6e2aee9c82ce"><img width="420" alt="Sprint 3 board 5" src="https://github.com/user-attachments/assets/da49de8b-4d37-4ff0-bfdc-6e2aee9c82ce" /></a>
+  <a href="https://github.com/user-attachments/assets/05be39fc-266d-4019-9e57-56f953b73afe"><img width="420" alt="Sprint 3 board 6" src="https://github.com/user-attachments/assets/05be39fc-266d-4019-9e57-56f953b73afe" /></a>
 
 </details>
 
