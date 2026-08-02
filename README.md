@@ -19,6 +19,7 @@
 - [Sprint 1](#-sprint-1)
 - [Sprint 2](#-sprint-2)
 - [Sprint 3](#-sprint-3)
+- [Kurulum ve Teknik Detaylar](#-kurulum-ve-teknik-detaylar)
 
 ---
 
@@ -406,7 +407,11 @@ Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
 
 <br>
 
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+- **Sprint 3 Notion Panosu (Genel Görünüm ve Biten İşler):**
+  [SafeRoute - Sprint 3 Panosu](https://app.notion.com/p/takim313/0ff4e2d8c3fa457f8012d127e48196e5?v=3b0780ef363a81cfa9c5000c4822e9c6)
+
+  <!-- Sprint 3 board ekran görüntüsü buraya eklenecek -->
+  <!-- Örnek: <img width="1583" height="980" alt="Sprint 3 Notion Panosu" src="..." /> -->
 
 </details>
 
@@ -415,7 +420,16 @@ Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
 
 <br>
 
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+- Sprint 3 Notion panosunda planlanan **23 iş kalemi** Done kolonuna taşındı; Backlog / To Do / In Progress boş kaldı.
+- Supabase kimlik doğrulama, onboarding ve misafir deneyimi mobil tarafta tamamlandı.
+- Profil, İhbarlarım, topluluk ihbar katmanı ve bildirim ayarları entegre edildi.
+- 1 km tanık isteği → onay → yayın acil ihbar hattı backend + mobil modal/push ile uçtan uca çalışır hale getirildi.
+- Adım adım canlı navigasyon ve sesli yönlendirme (TR/EN) eklendi.
+- Compact CSR rota motoru, rota profilleri API’si (En Kısa / Dengeli / Daha Güvenli) ve eşzamanlılık limitleri tamamlandı.
+- Chicago suç + 311 aydınlatma ETL hatları, H3 res-10 geçişi ve compact graf / navigasyon sidecar üretimi bitirildi.
+- NLP tarafında kategori/ciddiyet, MiniLM shadow kalibrasyonu, konu dışı ihbar eleme ve kümeleme/doğrulama skoru tamamlandı.
+- LLM ile rota/sokak risk açıklaması ve acil durum bildirim metinleri (DeepSeek) entegre edildi.
+- Sprint 3 Figma ekranları, tanık/acil akış etkileşim tasarımı ve kapanış dokümantasyonu / demo hazırlığı yapıldı.
 
 </details>
 
@@ -424,7 +438,7 @@ Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
 
 <br>
 
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+- 230 Puan _(23 Done iş kalemi)_
 
 </details>
 
@@ -433,7 +447,13 @@ Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
 
 <br>
 
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+Sprint 3 Notion panosunda hedeflenen iş kalemlerinin tamamı Done’a alındı (**23/23**). Backlog, To Do ve In Progress kolonları boş kaldığı için sprint kapsamındaki puan yükü eksiksiz tamamlanmış kabul edilmiştir.
+
+| Metrik              | Değer         |
+| ------------------- | ------------- |
+| **Done**            | 23            |
+| **Backlog / To Do / In Progress** | 0 |
+| **Durum**           | ✅ Tamamlandı |
 
 </details>
 
@@ -442,7 +462,11 @@ Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
 
 <br>
 
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+- **Ürün Yönetimi ve Tasarım (Seda Nur):** Sprint 3 yeni ekranların Figma tasarımı (Auth, Onboarding, Profil, Navigasyon); tanık doğrulama ve acil durum akışının etkileşim tasarımı; uygulama içi metin, ikonografi ve erişilebilirlik tutarlılığı; kapanış dokümantasyonu, ekran görüntüleri ve demo sunumu.
+- **Backend (Seymen):** Supabase auth ve üretim seviyesi RLS (BE-07); kullanıcı profili, İhbarlarım ve geri alınabilir hesap silme (BE-08); acil ihbar hattı 1 km tanık → onay → yayın (BE-09); Expo push, cihaz ve konum kaydı (BE-10); rota profilleri API’si En Kısa / Dengeli / Daha Güvenli (BE-11); Compact CSR rota motoru, eşzamanlılık limitleri ve hata sözleşmesi (BE-12).
+- **Frontend / Mobil (Osman):** Supabase auth ekranları, onboarding ve misafir deneyimi (14); tanık doğrulama modalı, push bildirimi ve bildirim ayarları (16); profil, İhbarlarım ve topluluk ihbar katmanı (17); adım adım canlı navigasyon ve sesli yönlendirme TR/EN (15).
+- **Veri Bilimi / Altyapı (Mehmet Ali):** Chicago suç ETL ve `risk_crime` (DS-01); 311 aydınlatma ETL ve `risk_lighting` (DS-02); H3 res-10 geçişi ve ebeveyn yumuşatma (DS-03); compact graf ve navigasyon sidecar (DS-04); rota/sokak risk açıklaması ve acil bildirim metni LLM-03 (DeepSeek).
+- **Yapay Zeka / NLP (Merve):** İhbar metni kategori ve ciddiyet modeli (NLP-01); MiniLM gömme ve shadow kalibrasyon (NLP-02); konu dışı ihbar eleme / off-topic guardrail (NLP-03); ihbar kümeleme ve doğrulama skoru V (NLP-04).
 
 </details>
 
@@ -451,7 +475,7 @@ Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
 
 <br>
 
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+- Mehmet Ali, Osman, Seymen, Merve, Seda Nur
 
 </details>
 
@@ -460,7 +484,9 @@ Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
 
 <br>
 
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+- **Süreç Değerlendirmesi:** Sprint 3’te backend, mobil, NLP, veri boru hattı ve tasarım işleri paralel ilerletildi; Notion panosunda 23 kartın tamamının Done’a alınması takım içi eşzamanlı çalışmanın oturduğunu gösterdi. Auth, tanık doğrulama ve canlı navigasyon gibi uçtan uca akışlar tek sprintte birleştirilerek ürün demoya hazır hale getirildi.
+- **İyileştirmeler:** Ortam/konfigürasyon farkları (emülatör vs fiziksel cihaz, API taban URL) demo öncesi erken doğrulanmalı; jüri demosu ve bildirim akışları tek cihaz üzerinden tekrarlanabilir tutulmalı.
+- **Gelecek Planlar:** Demo sunumu ve kapanış dokümantasyonunun netleştirilmesi; staging’de uçtan uca prova; performans / son cila maddelerinin izlenmesi.
 
 </details>
 
@@ -469,7 +495,15 @@ Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
 
 <br>
 
-> _Bu bölüm Sprint 3 tamamlandığında güncellenecektir._
+Sprint 3 Notion panosundaki kart atamalarına göre iş dağılımı şöyle yapılandırıldı:
+
+| Üye            | Sorumluluk                                                                 |
+| -------------- | -------------------------------------------------------------------------- |
+| **Seda Nur**   | Figma (Auth/Onboarding/Profil/Navigasyon), tanık-acil etkileşim tasarımı, metin/ikonografi/erişilebilirlik, kapanış dokümantasyonu ve demo |
+| **Merve**      | NLP-01…NLP-04: kategori/ciddiyet, MiniLM shadow, off-topic guardrail, kümeleme ve doğrulama skoru |
+| **Mehmet Ali** | DS-01…DS-04 (suç/aydınlatma ETL, H3-10, compact graf); LLM-03 rota/sokak risk ve acil bildirim metni |
+| **Seymen**     | BE-07…BE-12: Supabase auth/RLS, profil/ihbarlarım, tanık-yayın hattı, Expo push, rota profilleri, Compact CSR motoru |
+| **Osman**      | Mobil auth/onboarding/misafir, tanık modalı + bildirimler, profil/İhbarlarım/ihbar katmanı, canlı navigasyon ve sesli yönlendirme |
 
 </details>
 
@@ -483,6 +517,97 @@ Takım içi iletişimimizi çevik (agile) prensiplere uygun olarak WhatsApp ve M
 Sprint 3 daily scrum ekran görüntüleri proje deposunda arşivlenmiştir:
 
 [Sprint 3 Daily Scrum](https://github.com/seyo60/Takim313-Bootcamp/tree/main/Sprint_3/Sprint3_Daily_Scrum)
+
+</details>
+
+---
+
+## 🛠️ Kurulum ve Teknik Detaylar
+
+<details>
+<summary><strong>⚙️ Gereksinimler</strong></summary>
+
+<br>
+
+| Bileşen | Gereksinim |
+| ------- | ---------- |
+| **Backend** | Python 3.11+, sanal ortam (`.venv`), PostGIS / Supabase erişimi, `SafeRoute_App/backend/.env` |
+| **Mobil** | Node.js + npm, Expo SDK 57, Android emülatör veya geliştirme build’li cihaz, JDK 17 (Android), `SafeRoute_App/mobile-app/.env.local` |
+| **Harita** | Mapbox public token (`EXPO_PUBLIC_MAPBOX_TOKEN`) ve native build için download token |
+| **Kimlik** | Supabase URL + publishable key (mobil); backend’de ilgili auth ayarları |
+| **Not** | Expo Go Mapbox native modülünü yükleyemez; emülatör/cihazda **development build** kullanılmalıdır |
+
+</details>
+
+<details>
+<summary><strong>🖥️ Backend nasıl ayağa kaldırılır</strong></summary>
+
+<br>
+
+PowerShell (Windows):
+
+```powershell
+Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
+cd "SafeRoute_App\backend"
+.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8002
+```
+
+- İlk açılışta compact graf + risk yüklemesi bir süre sürebilir.
+- Sağlık kontrolü: tarayıcıda `http://127.0.0.1:8002/docs`
+- Port doluysa (`10048`): `netstat -ano | findstr ":8002"` ile PID bulup süreci kapatın, sonra tekrar başlatın.
+
+Detaylı kurulum (migration, seed, Docker PostGIS): `SafeRoute_App/backend/README.md`
+
+</details>
+
+<details>
+<summary><strong>📱 Mobil nasıl ayağa kaldırılır</strong></summary>
+
+<br>
+
+Uygulama daha önce build edildiyse native rebuild gerekmez; Metro + kurulu app yeterlidir.
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-17"
+$env:Path = "$env:JAVA_HOME\bin;$env:LOCALAPPDATA\Android\Sdk\platform-tools;$env:Path"
+cd "SafeRoute_App\mobile-app"
+npx expo start --android
+```
+
+- Emülatör API adresi: `.env.local` içinde `EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8002`
+- Fiziksel cihaz: bilgisayarın LAN IP’si veya `adb reverse` / runbook (`docs/runbooks/physical_android_testing.md`)
+- `8081` dolu uyarısında alternatif porta **Y** diyebilir veya eski Metro sürecini kapatabilirsiniz.
+
+İlk kurulum / typecheck / lint: `SafeRoute_App/mobile-app/README.md`
+
+</details>
+
+<details>
+<summary><strong>🧪 Test hesapları (lokal)</strong></summary>
+
+<br>
+
+Staging / lokal denemeler için örnek hesaplar (şifre takım içi paylaşımla aynı tutulur):
+
+- `test1@saferoute.local`
+- `test2@saferoute.local`
+- `test3@saferoute.local`
+
+Jüri demosu: Profil → **İhbar bildirim simülasyonunu başlat** (Magnificent Mile tanık → onay → doğrulanmış bildirim).
+
+</details>
+
+<details>
+<summary><strong>📁 Önemli dizinler</strong></summary>
+
+<br>
+
+| Yol | Açıklama |
+| --- | ------- |
+| `SafeRoute_App/backend` | FastAPI, CRUD, NLP/LLM servisleri, Alembic |
+| `SafeRoute_App/mobile-app` | Expo Router mobil istemci |
+| `SafeRoute_App/data-science` | Compact graf / ETL çıktıları (büyük dosyalar repoda olmayabilir) |
+| `Sprint_1` … `Sprint_3` | Sprint kanıtları (daily scrum, ekran görüntüleri, PM) |
 
 </details>
 
