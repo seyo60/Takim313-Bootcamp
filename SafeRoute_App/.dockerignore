@@ -1,0 +1,31 @@
+# Local dependency and test state must never enter the build context.
+backend/.venv/
+backend/.pytest_cache/
+backend/.pytest_tmp/
+backend/.ruff_cache/
+backend/**/__pycache__/
+backend/**/*.py[cod]
+mobile-app/node_modules/
+mobile-app/.npm-cache/
+mobile-app/.expo/
+
+# Runtime and developer-only state.
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/.etl_checkpoints/
+backend/*cache*.json
+mobile-app/.env
+mobile-app/.env.*
+!mobile-app/.env.example
+
+# The compact artifacts are copied explicitly; raw graph/model outputs are not.
+data-science/*.graphml
+data-science/*.npy
+
+.git/
+.github/
+docs/
+design/
+Sprint_*/
+*.log

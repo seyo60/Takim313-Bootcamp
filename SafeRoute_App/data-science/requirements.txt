@@ -1,0 +1,7 @@
+pandas
+geopandas
+shapely
+folium
+h3>=4.0.0
+osmnx
+networkx

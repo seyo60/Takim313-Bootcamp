@@ -1,0 +1,83 @@
+# SafeRoute lokal gelistirme ortami
+# Calistirma: docker compose up --build
+# NOT: web servisi, db servisi pg_isready healthcheck'inden GECENE KADAR baslamaz
+# (depends_on: condition: service_healthy). Migration yalnızca bu local compose
+# servisinde RUN_MIGRATIONS=true ile açıkça etkinleştirilir.
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: saferoute
+      POSTGRES_PASSWORD: saferoute
+      POSTGRES_DB: saferoute
+    ports:
+      - "5432:5432"
+    volumes:
+      - saferoute_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saferoute -d saferoute"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENVIRONMENT: development
+      DATABASE_URL: postgresql+asyncpg://saferoute:saferoute@db:5432/saferoute
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: saferoute
+      GRAPH_PATH: /data-science/chicago_walk.graphml
+      COMPACT_GRAPH_PATH: /data-science/compact_graph_res10.npz
+      NAVIGATION_SIDECAR_PATH: /data-science/navigation_sidecar_res10.npz
+      NAVIGATION_SIDECAR_REQUIRED: "true"
+      ROUTING_SEARCH_ALGORITHM: scipy_dijkstra
+      ROUTING_H3_RESOLUTION: "10"
+      ETL_H3_RESOLUTION: "10"
+      REPORT_H3_RESOLUTION: "9"
+      H3_PARENT_RESOLUTION: "9"
+      RUN_MIGRATIONS: "true"
+      REPORTER_HASH_SECRET: ${REPORTER_HASH_SECRET:?Set REPORTER_HASH_SECRET to a random value with at least 32 characters}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081}
+      # Ilk kurulumda Chicago suç verisini otomatik yuklemek icin true yapin:
+      SEED_ON_START: "false"
+      # LLM ayarlari (.env dosyasindan da beslenebilir)
+      LLM_MODE: ${LLM_MODE:-mock}
+      LLM_PROVIDER: ${LLM_PROVIDER:-deepseek}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-v4-flash}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8000:8000"
+    # 32-istek overload sonrası kararlı kullanım yaklaşık 535 MiB. 768 MiB sınırı,
+    # sidecar ve worker çalışma payını korurken kontrolsüz büyümeyi engeller.
+    mem_limit: 768m
+    mem_reservation: 640m
+
+  db_test:
+    image: postgis/postgis:16-3.4
+    profiles: ["test"]
+    environment:
+      POSTGRES_USER: saferoute_test
+      POSTGRES_PASSWORD: saferoute_test
+      POSTGRES_DB: saferoute_migration_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saferoute_test -d saferoute_migration_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  saferoute_pgdata:
