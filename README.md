@@ -408,7 +408,7 @@ Sprint 3 aşamasında mobil uygulama ekran görüntüleri aşağıdadır:
 <br>
 
 - **Sprint 3 Notion Panosu (Genel Görünüm ve Biten İşler):**
-  [SafeRoute - Sprint 3 Panosu](https://app.notion.com/p/takim313/0ff4e2d8c3fa457f8012d127e48196e5?v=3b0780ef363a81cfa9c5000c4822e9c6)
+  [SafeRoute - Sprint 3 Panosu]([https://app.notion.com/p/takim313/0ff4e2d8c3fa457f8012d127e48196e5?v=3b0780ef363a81cfa9c5000c4822e9c6](https://app.notion.com/p/takim313/0ff4e2d8c3fa457f8012d127e48196e5?v=3b0780ef363a81cfa9c5000c4822e9c6))
   
 <a href="https://github.com/user-attachments/assets/6e0734b7-bad2-40b3-b1c4-59166b3f78e0"><img width="420" alt="Sprint 3 board 1" src="https://github.com/user-attachments/assets/6e0734b7-bad2-40b3-b1c4-59166b3f78e0" /></a>
   <a href="https://github.com/user-attachments/assets/04732aef-df73-4626-9d85-33862091e4b7"><img width="420" alt="Sprint 3 board 2" src="https://github.com/user-attachments/assets/04732aef-df73-4626-9d85-33862091e4b7" /></a>
